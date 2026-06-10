@@ -44,6 +44,13 @@ class Game:
 
     def _handle_placing(self, event):
         if event.type == pygame.KEYDOWN:
+            # Space for placing
+            if event.key == pygame.K_SPACE:
+                obj = self.placeables[self.current_placeable].get_instance(self.cursor.position)
+                if self.grid.place_object(obj):
+                    self.objects.append(obj)
+                return
+
             # Tab for placeable switching
             if event.key == pygame.K_TAB:
                 self.current_placeable = (self.current_placeable + 1) % len(self.placeables)
@@ -76,6 +83,8 @@ class Game:
         # grid
         self.grid.draw(self.screen)
         # objects
+        for obj in self.objects:
+            obj.draw(self.screen)
         # cursor
         if not self.cursor.hidden:
             self.cursor.draw(self.screen)

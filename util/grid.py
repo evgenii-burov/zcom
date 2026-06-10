@@ -7,6 +7,7 @@ from config import GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, COLOR_TILE, TILE_RENDER_S
 class Tile:
     def __init__(self, grid_point: GridPoint):
         self.position = grid_point
+        self.obj = None
         self.occupied = False
 
     def draw(self, surface):
@@ -33,11 +34,14 @@ class Grid:
             for tile in line:
                 tile.draw(surface)
 
-    def place_object(self, obj: GameObject):
+    def place_object(self, obj: GameObject) -> bool:
         if self.get_tile(obj.position.grid_point()).occupied:
             print("Placing on an occupied tile")
+            return False
         else:
             self.get_tile(obj.position.grid_point()).occupied = True
+            self.get_tile(obj.position.grid_point()).obj = obj
+            return True
 
     def get_tile(self, grid_point: GridPoint) -> Tile:
         return self.tiles[grid_point.y][grid_point.x]

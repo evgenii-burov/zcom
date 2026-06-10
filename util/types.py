@@ -1,5 +1,8 @@
 from enum import Enum
 
+from config import TILE_SIZE
+
+
 class Point:
     def __init__(self, x: float, y: float):
         self.x = x
@@ -18,6 +21,13 @@ class GridPoint(Point):
     def __init__(self, x: float, y: float):
         self.x = round(x)
         self.y = round(y)
+
+    def pixel_point(self):
+        return PixelPoint(self.x*TILE_SIZE, self.y * TILE_SIZE)
+
+    def tile_center(self):
+        pixel_origin = self.pixel_point()
+        return  PixelPoint(pixel_origin.x + TILE_SIZE/2, pixel_origin.y + TILE_SIZE/2,)
 
     def tuple(self):
         return (self.x, self.y)
