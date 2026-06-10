@@ -36,15 +36,26 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
             elif self.state == State.PLACING:
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_LEFT:
-                        self.cursor.move(Direction.LEFT)
-                    elif event.key == pygame.K_RIGHT:
-                        self.cursor.move(Direction.RIGHT)
-                    elif event.key == pygame.K_UP:
-                        self.cursor.move(Direction.UP)
-                    elif event.key == pygame.K_DOWN:
-                        self.cursor.move(Direction.DOWN)
+                self._handle_placing(event)
+
+    def _handle_placing(self, event):
+        if event.type == pygame.KEYDOWN:
+            direction = Direction.NULL
+            distance = 0
+            mods = pygame.key.get_mods()
+            if mods & pygame.KMOD_CTRL:
+                distance = 5
+            else:
+                distance = 1
+            if event.key == pygame.K_LEFT:
+                direction = Direction.LEFT
+            elif event.key == pygame.K_RIGHT:
+                direction = Direction.RIGHT
+            elif event.key == pygame.K_UP:
+                direction = Direction.UP
+            elif event.key == pygame.K_DOWN:
+                direction = Direction.DOWN
+            self.cursor.move(direction, distance)
 
     def update(self):
         # objects

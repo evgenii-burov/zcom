@@ -30,6 +30,7 @@ class PixelPoint(Point):
 
 
 class Direction(Enum):
+    NULL = Point(0,0)
     UP = Point(0, -1)
     DOWN = Point(0, 1)
     LEFT = Point(-1, 0)
