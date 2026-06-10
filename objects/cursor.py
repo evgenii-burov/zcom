@@ -26,10 +26,13 @@ class Cursor(GameObject):
         self.hidden = not self.hidden
 
     def move(self, direction: Direction):
+        self.hidden = False
+        self.blink_timer = 0
         new_position = GridPoint(self.position.x + direction.x, self.position.y + direction.y)
         if self.grid.in_bounds(new_position):
             self.position = new_position
         else:
-            new_x = self.position.x + direction.x * (self.grid.width - 1)
-            new_y = self.position.y + direction.y * (self.grid.height - 1)
+            new_x = self.position.x - direction.x * (self.grid.width - 1)
+            new_y = self.position.y - direction.y * (self.grid.height - 1)
             new_position = GridPoint(new_x, new_y)
+            self.position = new_position

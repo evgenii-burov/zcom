@@ -3,7 +3,7 @@ from config import *
 from core.state import State
 from core.turn_manager import TurnManager
 from objects.cursor import Cursor
-from util.types import Point
+from util.types import Point, GridPoint, PixelPoint, Direction
 from util.grid import Grid
 
 class Game:
@@ -17,7 +17,7 @@ class Game:
 
         self.objects = []
         self.units = []
-        self.cursor = Cursor(Point(GRID_WIDTH/2,GRID_HEIGHT/2), False, False)
+        self.cursor = Cursor(GridPoint(GRID_WIDTH/2,GRID_HEIGHT/2), False, False, self.grid)
         # self.cursor = Cursor(Point(0, 0), False, False)
 
         self.turn_manager = TurnManager()
@@ -35,6 +35,16 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            elif self.state == State.PLACING:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LEFT:
+                        self.cursor.move(Direction.LEFT)
+                    elif event.key == pygame.K_RIGHT:
+                        self.cursor.move(Direction.RIGHT)
+                    elif event.key == pygame.K_UP:
+                        self.cursor.move(Direction.UP)
+                    elif event.key == pygame.K_DOWN:
+                        self.cursor.move(Direction.DOWN)
 
     def update(self):
         # objects
