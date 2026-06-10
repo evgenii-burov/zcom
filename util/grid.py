@@ -1,21 +1,13 @@
 import pygame
 
 from util.types import Point, GridPoint, PixelPoint
+from  objects.base import GameObject
 from config import GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, COLOR_TILE, TILE_RENDER_SCALE
 
 class Tile:
     def __init__(self, grid_point: GridPoint):
         self.position = grid_point
-        self.has_cover = False
-        self.unit = None
-
-    @property
-    def blocked(self):
-        return self.has_cover
-
-    @property
-    def occupied(self):
-        return self.unit is not None
+        self.occupied = False
 
     def draw(self, surface):
         origin = to_pixel(self.position)
@@ -34,15 +26,21 @@ class Grid:
     def __init__(self, width: int=GRID_WIDTH, height: int=GRID_HEIGHT):
         self.width = width
         self.height = height
-        self.tiles = [[Tile(Point(x, y)) for x in range(width)] for y in range(height)]
+        self.tiles = [[Tile(GridPoint(x, y)) for x in range(width)] for y in range(height)]
 
     def draw(self, surface: pygame.Surface):
         for line in self.tiles:
             for tile in line:
                 tile.draw(surface)
 
-    def get_tile(self, x, y) -> Tile:
-        return self.tiles[y][x]
+    def place_object(self, obj: GameObject):
+        if self.get_tile(obj.position.grid_point()).occupied:
+            print("Placing on an occupied tile")
+        else:
+            self.get_tile(obj.position.grid_point()).occupied = True
+
+    def get_tile(self, grid_point: GridPoint) -> Tile:
+        return self.tiles[grid_point.y][grid_point.x]
 
     def in_bounds(self, grid_point: GridPoint) -> bool:
         return 0 <= grid_point.x < self.width and 0 <= grid_point.y < self.height

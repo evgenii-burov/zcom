@@ -8,6 +8,9 @@ class Point:
     def tuple(self):
         return (self.x, self.y)
 
+    def grid_point(self):
+        return GridPoint(self.x, self.y)
+
     def __str__(self):
         return f'({self.x};{self.y})'
 

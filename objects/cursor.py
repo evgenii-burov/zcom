@@ -16,7 +16,7 @@ class Cursor(GameObject):
     def draw(self, surface: pygame.Surface):
         center = to_pixel(self.position).tuple()
         center = (center[0] + TILE_SIZE/2, center[1] + TILE_SIZE/2)
-        pygame.draw.circle(surface, self.color, center, TILE_SIZE / sqrt(2), 3)
+        pygame.draw.circle(surface, self.color, center, TILE_SIZE / sqrt(2), 5)
 
     def update(self):
         self.blink_timer += 1

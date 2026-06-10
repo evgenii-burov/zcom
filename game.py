@@ -2,6 +2,8 @@ import pygame
 from config import *
 from core.state import State
 from core.turn_manager import TurnManager
+from core.placeables import  Placeable
+from core.ui import UI
 from objects.cursor import Cursor
 from util.types import Point, GridPoint, PixelPoint, Direction
 from util.grid import Grid
@@ -18,7 +20,9 @@ class Game:
         self.objects = []
         self.units = []
         self.cursor = Cursor(GridPoint(GRID_WIDTH/2,GRID_HEIGHT/2), False, False, self.grid)
-        # self.cursor = Cursor(Point(0, 0), False, False)
+        self.placeables = [x for x in Placeable]
+        self.current_placeable = 0
+        self.ui = UI()
 
         self.turn_manager = TurnManager()
     
@@ -40,6 +44,11 @@ class Game:
 
     def _handle_placing(self, event):
         if event.type == pygame.KEYDOWN:
+            # Tab for placeable switching
+            if event.key == pygame.K_TAB:
+                self.current_placeable = (self.current_placeable + 1) % len(self.placeables)
+                return
+            # Cursor movement
             direction = Direction.NULL
             distance = 0
             mods = pygame.key.get_mods()
@@ -70,5 +79,7 @@ class Game:
         # cursor
         if not self.cursor.hidden:
             self.cursor.draw(self.screen)
+        # ui
+        self.ui.draw(self.screen, self.state, self.cursor, self.grid, self.placeables[self.current_placeable])
 
         
