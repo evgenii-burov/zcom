@@ -5,7 +5,7 @@ from objects.cursor import Cursor
 from util.grid import Grid
 from core.state import State
 from core.placeables import Placeable
-from config import SCREEN_WIDTH, SCREEN_HEIGHT, FRAMERATE, TEXT_SPACING
+from config import SCREEN_WIDTH, SCREEN_HEIGHT, FRAMERATE, TEXT_SPACING, MSG_BLACK, MSG_GREEN, MSG_RED
 from util.types import PixelPoint
 
 
@@ -18,32 +18,39 @@ class Message:
 
 
 class MessageBlock:
-    def __init__(self):
+    def __init__(self, font: pygame.font):
         self.messages = []
+        self.font = font
+        self.line_spacing = self.font.get_height() * TEXT_SPACING
 
-    def render(self, position: PixelPoint):
-        messages = [x.life]
+    def push(self, text:str, temporary: bool, lifetime: int, color: pygame.Color):
+        self.messages.append(Message(text, temporary, lifetime, color))
+
+    def render(self, surface: pygame.Surface, position: PixelPoint):
+        for message in self.messages:
+            if message.temporary:
+                message.lifetime -= 1
+        self.messages = [message for message in self.messages if message.lifetime > 0]
+
+        for message in self.messages:
+            text_surface = self.font.render(message.text, False, message.color)
+            surface.blit(text_surface, (position.x, position.y))
+            position = PixelPoint(position.x, position.y + self.line_spacing)
 
 
 class UI:
     def __init__(self):
         self.font = pygame.font.SysFont("monospace", 22)
         self.font.bold = True
-        self.messages = []
-        self.line_spacing = self.font.get_height() * TEXT_SPACING
+        self.tooltip = MessageBlock(self.font)
+        self.action_log = MessageBlock(self.font)
+
+        self.PLACING_TOOLTIP = MessageBlock(self.font)
+        self.PLACING_TOOLTIP.push("ARROW KEYS: move cursor", False, 1, MSG_BLACK)
+        self.PLACING_TOOLTIP.push("TAB: switch object", False, 1, MSG_BLACK)
 
     def log_message(self, message: str, color: pygame.Color):
-        self.messages.append(Message(message, 3*FRAMERATE, color))
-
-    def render_message_block
-
-    def _render_multiline(self, surface, text, pos, line_spacing=5):
-        x, y = pos
-        for line in text.splitlines():
-            line = line.replace('\t', '    ')  # handle tabs too
-            line_surf = self.font.render(line, True, (0,0,0))
-            surface.blit(line_surf, (x, y))
-            y += self.font.get_linesize() + line_spacing
+        self.action_log.append(Message(message, 3*FRAMERATE, color))
 
     def draw(self, surface: pygame.Surface, state:State, cursor: Cursor, grid: Grid, placeable: Placeable):
         if state == State.PLACING:
