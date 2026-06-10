@@ -22,6 +22,9 @@ class GridPoint(Point):
         self.x = round(x)
         self.y = round(y)
 
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
     def pixel_point(self):
         return PixelPoint(self.x*TILE_SIZE, self.y * TILE_SIZE)
 

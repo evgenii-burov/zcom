@@ -6,12 +6,15 @@ from util.types import GridPoint
 from core.team import Team
 
 class Placeable(Enum):
+    DELETE = auto()
     UNIT_TEAM1 = auto()
     UNIT_TEAM2 = auto()
     COVER = auto()
 
-    def get_instance(self, grid_point: GridPoint)->GameObject:
+    def get_instance(self, grid_point: GridPoint):
         match self:
+            case Placeable.DELETE:
+                return None
             case Placeable.UNIT_TEAM1:
                 return Unit(grid_point, False, False, Team.TEAM1)
             case Placeable.UNIT_TEAM2:
@@ -21,6 +24,8 @@ class Placeable(Enum):
 
     def __str__(self):
         match self:
+            case Placeable.DELETE:
+                return "Erase"
             case Placeable.UNIT_TEAM1:
                 return "Friendly unit"
             case Placeable.UNIT_TEAM2:

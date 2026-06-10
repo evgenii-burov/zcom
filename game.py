@@ -5,6 +5,7 @@ from core.turn_manager import TurnManager
 from core.placeables import  Placeable
 from core.ui import UI
 from objects.cursor import Cursor
+from objects.base import GameObject
 from util.types import Point, GridPoint, PixelPoint, Direction
 from util.grid import Grid
 
@@ -25,7 +26,19 @@ class Game:
         self.ui = UI()
 
         self.turn_manager = TurnManager()
-    
+
+    def delete_object(self, position: GridPoint):
+        self.grid.get_tile(position).obj = None
+        i = next(i for i, obj in enumerate(self.objects) if obj.position == position)
+        self.objects.pop(i)
+
+    def add_object(self, obj: GameObject):
+        if self.grid.get_tile(obj.position.grid_point()).occupied:
+            self.ui.log_message("Tile is occupied", True, 3, MSG_RED)
+            return
+        self.grid.place_object(obj)
+        self.objects.append(obj)
+
     def run(self):
         while self.running:
             self.handle_events()
@@ -47,9 +60,18 @@ class Game:
             # Space for placing
             if event.key == pygame.K_SPACE:
                 obj = self.placeables[self.current_placeable].get_instance(self.cursor.position)
-                if self.grid.place_object(obj):
-                    self.objects.append(obj)
+                if obj is None:
+                    if self.grid.get_tile(self.cursor.position).occupied:
+                        self.delete_object(self.cursor.position)
+                        return
+                    else:
+                        return
+                if self.grid.get_tile(obj.position).occupied:
+                    self.delete_object(obj.position)
+                self.add_object(obj)
+                self.ui.log_message(f"Placed {obj.__str__()}", True, 3, MSG_GREEN)
                 return
+
 
             # Tab for placeable switching
             if event.key == pygame.K_TAB:

@@ -19,5 +19,7 @@ class Unit(GameObject):
         rect_origin_y = unit_origin_pixel_y + UNIT_ORIGIN_Y_OFFSET
 
         unit_rect = pygame.Rect(rect_origin_x, rect_origin_y, UNIT_WIDTH, UNIT_HEIGHT)
-        pygame.draw.rect(surface, self.color, unit_rect, 3)
+        pygame.draw.rect(surface, self.color, unit_rect)
 
+    def __str__(self):
+        return "friendly unit" if self.team == Team.TEAM1 else "enemy unit"

@@ -8,7 +8,12 @@ class Tile:
     def __init__(self, grid_point: GridPoint):
         self.position = grid_point
         self.obj = None
-        self.occupied = False
+
+    @property
+    def occupied(self):
+        if self.obj is None:
+            return False
+        return True
 
     def draw(self, surface):
         origin = to_pixel(self.position)
@@ -39,7 +44,6 @@ class Grid:
             print("Placing on an occupied tile")
             return False
         else:
-            self.get_tile(obj.position.grid_point()).occupied = True
             self.get_tile(obj.position.grid_point()).obj = obj
             return True
 
