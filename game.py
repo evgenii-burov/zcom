@@ -29,6 +29,7 @@ class Game:
             self.draw()
             pygame.display.flip()
             self.clock.tick(FRAMERATE)
+        pygame.quit()
     
     def handle_events(self):
         for event in pygame.event.get():

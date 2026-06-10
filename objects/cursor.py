@@ -1,13 +1,14 @@
 import pygame
 from .base import GameObject
 from config import COLOR_CURSOR, TILE_SIZE, FRAMERATE
-from util.types import Point
-from util.grid import to_pixel
+from util.types import Point, Direction, GridPoint
+from util.grid import Grid, to_pixel
 from math import sqrt
 
 class Cursor(GameObject):
-    def __init__(self, position: Point, hidden: bool, selected: bool):
+    def __init__(self, position: Point, hidden: bool, selected: bool, grid: Grid):
         super().__init__(position, hidden, selected)
+        self.grid = grid
         self.color = COLOR_CURSOR
         self.blink_timer = 0
         self.blink_interval = .5
@@ -23,3 +24,12 @@ class Cursor(GameObject):
             return
         self.blink_timer = 0
         self.hidden = not self.hidden
+
+    def move(self, direction: Direction):
+        new_position = GridPoint(self.position.x + direction.x, self.position.y + direction.y)
+        if self.grid.in_bounds(new_position):
+            self.position = new_position
+        else:
+            new_x = self.position.x + direction.x * (self.grid.width - 1)
+            new_y = self.position.y + direction.y * (self.grid.height - 1)
+            new_position = GridPoint(new_x, new_y)
