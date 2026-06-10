@@ -1,14 +1,41 @@
 import pygame
+from pyexpat.errors import messages
+
 from objects.cursor import Cursor
 from util.grid import Grid
 from core.state import State
 from core.placeables import Placeable
-from config import SCREEN_WIDTH, SCREEN_HEIGHT
+from config import SCREEN_WIDTH, SCREEN_HEIGHT, FRAMERATE, TEXT_SPACING
+from util.types import PixelPoint
+
+
+class Message:
+    def __init__(self, text:str, temporary: bool, lifetime: int, color: pygame.Color):
+        self.text = text
+        self.temporary = temporary
+        self.lifetime = lifetime
+        self.color = color
+
+
+class MessageBlock:
+    def __init__(self):
+        self.messages = []
+
+    def render(self, position: PixelPoint):
+        messages = [x.life]
+
 
 class UI:
     def __init__(self):
         self.font = pygame.font.SysFont("monospace", 22)
         self.font.bold = True
+        self.messages = []
+        self.line_spacing = self.font.get_height() * TEXT_SPACING
+
+    def log_message(self, message: str, color: pygame.Color):
+        self.messages.append(Message(message, 3*FRAMERATE, color))
+
+    def render_message_block
 
     def _render_multiline(self, surface, text, pos, line_spacing=5):
         x, y = pos
