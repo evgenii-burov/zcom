@@ -1,6 +1,4 @@
 import pygame
-from pyexpat.errors import messages
-
 from objects.cursor import Cursor
 from util.grid import Grid
 from core.state import State
@@ -26,7 +24,7 @@ class MessageBlock:
         self.line_spacing = self.font.get_height() * TEXT_SPACING
 
     def push(self, text:str, temporary: bool, lifetime: int, color: pygame.Color):
-        self.messages.append(Message(text, temporary, lifetime, color))
+        self.messages.insert(0, Message(text, temporary, lifetime, color))
 
     def render(self, surface: pygame.Surface, position: PixelPoint):
         for message in self.messages:
@@ -69,4 +67,5 @@ class UI:
     def draw(self, surface: pygame.Surface, state:State, cursor: Cursor, grid: Grid, placeable: Placeable):
         self.draw_tooltip(surface, state)
         self.draw_cursor_state(surface, state, cursor, placeable)
+        self.draw_action_log(surface)
 
