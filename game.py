@@ -1,3 +1,5 @@
+from queue import Queue
+
 import pygame
 from config import *
 from core.state import State
@@ -8,7 +10,8 @@ from objects.cursor import Cursor
 from objects.base import GameObject
 from objects.unit import Unit
 from util.types import Point, GridPoint, PixelPoint, Direction
-from util.grid import Grid
+from util.grid import Grid, to_pixel
+from collections import deque
 
 class Game:
     def __init__(self):
@@ -45,11 +48,17 @@ class Game:
         self.grid.place_object(obj)
         self.objects.append(obj)
 
-    def select_object(self):
+    def select_unit(self):
         new_selected_unit = self.grid.get_tile(self.cursor.position).obj
         if new_selected_unit is None:
-            self.ui.log_message("The tile is empty", True, 3, MSG_RED)
-            return
+            if self.selected_unit is None:
+                self.ui.log_message("The tile is empty", True, 3, MSG_RED)
+                return
+            else:
+                self.selected_unit.selected = False
+                self.selected_unit = None
+                self.reachable_tiles = set()
+                return
         elif type(new_selected_unit) is not Unit:
             self.ui.log_message(f"Only units are selectable", True, 3, MSG_RED)
             return
@@ -60,9 +69,50 @@ class Game:
                     return
         if self.selected_unit is not None:
             self.selected_unit.selected = False
+            self.reachable_tiles = set()
         self.ui.log_message("Selected a unit", True, 3, MSG_BLUE)
         self.selected_unit = new_selected_unit
         self.selected_unit.selected = True
+        self.calculate_reachable_tiles()
+
+    def move_unit(self):
+        if self.selected_unit is None:
+            self.ui.log_message("No unit selected", True, 3, MSG_RED)
+            return
+        if self.cursor.position not in self.reachable_tiles:
+            self.ui.log_message("Unreachable tile", True, 3, MSG_RED)
+            return
+        self.grid.get_tile(self.selected_unit.position).obj = None
+        self.selected_unit.position = self.cursor.position
+
+        self.grid.get_tile(self.cursor.position).obj = self.selected_unit
+        self.selected_unit.selected = False
+        self.selected_unit = None
+        self.reachable_tiles = set()
+        self.ui.log_message("Moved a unit", True, 3, MSG_BLUE)
+
+    def calculate_reachable_tiles(self):
+        adjacent = ((0,1),(0,-1),(1,0),(-1,0))
+        visited = dict()
+        tiles_queued = deque()
+        tiles_queued.append((self.selected_unit.position, self.selected_unit.move_speed))
+        while tiles_queued:
+            current_tile, movement_left = tiles_queued.popleft()
+            if current_tile not in visited:
+                visited[current_tile] = movement_left
+            else:
+                if visited[current_tile] < movement_left:
+                    visited[current_tile] = movement_left
+
+            self.reachable_tiles.add(current_tile)
+            if movement_left == 0:
+                continue
+            for move in adjacent:
+                neighbour_tile = GridPoint(current_tile.x + move[0], current_tile.y + move[1])
+                if self.grid.in_bounds(neighbour_tile) and not self.grid.get_tile(neighbour_tile).occupied:
+                    if neighbour_tile in visited and visited[neighbour_tile] >= movement_left - 1:
+                        continue
+                    tiles_queued.append((neighbour_tile, movement_left - 1))
 
     def run(self):
         while self.running:
@@ -83,9 +133,17 @@ class Game:
                 self._handle_player_turn(event)
 
     def _handle_player_turn(self, event):
+        mods = pygame.key.get_mods()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                self.select_object()
+                # Shift+space
+                if mods & pygame.KMOD_SHIFT:
+                    # Move unit
+                    self.move_unit()
+                    return
+                # Space
+                self.select_unit()
+
             self._handle_cursor_movement(event)
 
     def _handle_cursor_movement(self, event):
@@ -143,10 +201,21 @@ class Game:
         # cursor
         self.cursor.update()
 
+    def draw_reachable_tiles(self):
+        for position in self.reachable_tiles:
+            unit_origin_pixel_x = position.grid_point().pixel_point().x
+            unit_origin_pixel_y = position.grid_point().pixel_point().y
+            rect_origin_x = unit_origin_pixel_x + TILE_REACHABLE_ORIGIN_X_OFFSET
+            rect_origin_y = unit_origin_pixel_y + TILE_REACHABLE_ORIGIN_Y_OFFSET
+
+            unit_rect = pygame.Rect(rect_origin_x, rect_origin_y, TILE_REACHABLE_WIDTH, TILE_REACHABLE_HEIGHT)
+            pygame.draw.rect(self.screen, COLOR_REACHABLE_TILE, unit_rect)
+
     def draw(self):
         self.screen.fill(COLOR_BACKGROUND)
         # grid
         self.grid.draw(self.screen)
+        self.draw_reachable_tiles()
         # objects
         for obj in self.objects:
             obj.draw(self.screen)
@@ -154,5 +223,6 @@ class Game:
         self.cursor.draw(self.screen)
         # ui
         self.ui.draw(self.screen, self.state, self.cursor, self.grid, self.placeables[self.current_placeable])
+
 
         

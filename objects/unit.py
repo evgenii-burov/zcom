@@ -10,6 +10,9 @@ class Unit(GameObject):
     def __init__(self, position: GridPoint, hidden: bool, selected: bool, team: Team):
         super().__init__(position, hidden, selected)
         self.team = team
+        self.move_speed = 4
+        self.moved = False
+        self.acted = False
         self.color = COLOR_TEAM1 if self.team == Team.TEAM1 else COLOR_TEAM2
 
         self.blink_timer = 0
