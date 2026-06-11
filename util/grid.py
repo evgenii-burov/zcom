@@ -19,6 +19,12 @@ class Tile:
         origin = to_pixel(self.position)
         pygame.draw.rect(surface, COLOR_TILE, pygame.Rect(origin.x, origin.y, TILE_SIZE*TILE_RENDER_SCALE, TILE_SIZE*TILE_RENDER_SCALE), 1)
 
+    def __str__(self):
+        if self.obj is None:
+            return 'empty tile'
+        else:
+            return self.obj.__str__()
+
 
 def to_pixel(grid_point: GridPoint) -> PixelPoint:
     return PixelPoint(grid_point.x * TILE_SIZE, grid_point.y * TILE_SIZE)

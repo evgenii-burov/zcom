@@ -1,9 +1,9 @@
 import pygame
 from config import *
 from core.state import State
-from core.turn_manager import TurnManager
 from core.placeables import  Placeable
 from core.ui import UI
+from core.team import Team
 from objects.cursor import Cursor
 from objects.base import GameObject
 from util.types import Point, GridPoint, PixelPoint, Direction
@@ -11,21 +11,26 @@ from util.grid import Grid
 
 class Game:
     def __init__(self):
+        # Game initialization
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.grid = Grid()
         self.clock = pygame.time.Clock()
         self.state = State.PLACING
         self.running = True
-
         self.objects = []
         self.units = []
         self.cursor = Cursor(GridPoint(GRID_WIDTH/2,GRID_HEIGHT/2), False, False, self.grid)
+        self.ui = UI()
+        # For State.Placing
         self.placeables = [x for x in Placeable]
         self.current_placeable = 0
-        self.ui = UI()
+        # For State.PlayerTurn or EnemyTurn
+        self.teams = [x for x in Team]
+        self.current_team = 0
+        self.selected_unit = None
+        self.reachable_tiles = set()
 
-        self.turn_manager = TurnManager()
 
     def delete_object(self, position: GridPoint):
         self.grid.get_tile(position).obj = None
@@ -54,9 +59,38 @@ class Game:
                 self.running = False
             elif self.state == State.PLACING:
                 self._handle_placing(event)
+            elif self.state == State.PLAYER_TURN:
+                self._handle_player_turn(event)
+
+    def _handle_player_turn(self, event):
+        if event.type == pygame.KEYDOWN:
+            self._handle_cursor_movement(event)
+
+    def _handle_cursor_movement(self, event):
+        direction = Direction.NULL
+        distance = 0
+        mods = pygame.key.get_mods()
+        if mods & pygame.KMOD_CTRL:
+            distance = 5
+        else:
+            distance = 1
+        if event.key == pygame.K_LEFT:
+            direction = Direction.LEFT
+        elif event.key == pygame.K_RIGHT:
+            direction = Direction.RIGHT
+        elif event.key == pygame.K_UP:
+            direction = Direction.UP
+        elif event.key == pygame.K_DOWN:
+            direction = Direction.DOWN
+        self.cursor.move(direction, distance)
 
     def _handle_placing(self, event):
         if event.type == pygame.KEYDOWN:
+            # Enter to finish placing
+            if event.key == pygame.K_RETURN:
+                self.ui.log_message(f"Finished placing", True, 5, MSG_BLUE)
+                self.state = State.PLAYER_TURN
+                return
             # Space for placing
             if event.key == pygame.K_SPACE:
                 obj = self.placeables[self.current_placeable].get_instance(self.cursor.position)
@@ -78,22 +112,7 @@ class Game:
                 self.current_placeable = (self.current_placeable + 1) % len(self.placeables)
                 return
             # Cursor movement
-            direction = Direction.NULL
-            distance = 0
-            mods = pygame.key.get_mods()
-            if mods & pygame.KMOD_CTRL:
-                distance = 5
-            else:
-                distance = 1
-            if event.key == pygame.K_LEFT:
-                direction = Direction.LEFT
-            elif event.key == pygame.K_RIGHT:
-                direction = Direction.RIGHT
-            elif event.key == pygame.K_UP:
-                direction = Direction.UP
-            elif event.key == pygame.K_DOWN:
-                direction = Direction.DOWN
-            self.cursor.move(direction, distance)
+            self._handle_cursor_movement(event)
 
     def update(self):
         # objects

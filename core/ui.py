@@ -50,23 +50,34 @@ class UI:
         self.PLACING_TOOLTIP.push("ARROW KEYS: move cursor", False, 1, MSG_BLACK)
         self.PLACING_TOOLTIP.push("TAB: switch object", False, 1, MSG_BLACK)
 
+        self.PLAYER_TURN_TOOLTIP = MessageBlock(self.font)
+        self.PLAYER_TURN_TOOLTIP.push("ENTER: finish turn", False, 1, MSG_BLACK)
+        self.PLAYER_TURN_TOOLTIP.push("ARROW KEYS: move cursor", False, 1, MSG_BLACK)
+
+
     def log_message(self, message: str, temporary: bool, lifetime_sec: float, color: pygame.Color):
         self.action_log.push(message, temporary, lifetime_sec * FRAMERATE, color)
 
     def draw_tooltip(self, surface: pygame.Surface, state:State):
         if state == State.PLACING:
             self.PLACING_TOOLTIP.render(surface, PixelPoint(TOOLTIP_POSITION_X, TOOLTIP_POSITION_Y))
+        if state == State.PLAYER_TURN:
+            self.PLAYER_TURN_TOOLTIP.render(surface, PixelPoint(TOOLTIP_POSITION_X, TOOLTIP_POSITION_Y))
 
     def draw_action_log(self, surface: pygame.Surface):
         self.action_log.render(surface, PixelPoint(ACTION_LOG_POSITION_X, ACTION_LOG_POSITION_Y))
 
-    def draw_cursor_state(self, surface: pygame.Surface, state:State, cursor: Cursor, placeable: Placeable):
+    def draw_cursor_state(self, surface: pygame.Surface, state:State, cursor: Cursor, grid: Grid, placeable: Placeable):
         if state == State.PLACING:
             text_surface = self.font.render(f'Cursor: {placeable.__str__()}', True, MSG_BLUE)
+            surface.blit(text_surface, (CURRENT_TILE_INFO_POSITION_X, CURRENT_TILE_INFO_POSITION_Y))
+        if state == State.PLAYER_TURN:
+            tooltip = grid.get_tile(cursor.position).__str__()
+            text_surface = self.font.render(tooltip, True, MSG_BLUE)
             surface.blit(text_surface, (CURRENT_TILE_INFO_POSITION_X, CURRENT_TILE_INFO_POSITION_Y))
 
     def draw(self, surface: pygame.Surface, state:State, cursor: Cursor, grid: Grid, placeable: Placeable):
         self.draw_tooltip(surface, state)
-        self.draw_cursor_state(surface, state, cursor, placeable)
+        self.draw_cursor_state(surface, state, cursor, grid, placeable)
         self.draw_action_log(surface)
 
