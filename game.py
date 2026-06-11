@@ -34,6 +34,8 @@ class Game:
         self.current_team = 0
         self.selected_unit = None
         self.reachable_tiles = set()
+        self.intersected_tiles = set()
+        self.trajectory = None
 
 
     def delete_object(self, position: GridPoint):
@@ -114,6 +116,51 @@ class Game:
                         continue
                     tiles_queued.append((neighbour_tile, movement_left - 1))
 
+    def calculate_trajectory(self, start: GridPoint, end: GridPoint):
+        iterations = 0
+        self.trajectory = (start.tile_center().tuple(), end.tile_center().tuple())
+        self.intersected_tiles = set()
+
+        dx = end.x - start.x
+        dy = end.y - start.y
+        sx = 1 if dx > 0 else -1
+        sy = 1 if dy > 0 else -1
+
+        # How far along the ray (in units of ray length) between
+        # each vertical / horizontal grid crossing
+        step_x = abs(1 / dx) if dx != 0 else float('inf')
+        step_y = abs(1 / dy) if dy != 0 else float('inf')
+
+        # Distance to first crossing on each axis from start tile
+        t_x = step_x * (0.5 + (0.5 - (start.x - int(start.x)))) if dx != 0 else float('inf')
+        t_y = step_y * (0.5 + (0.5 - (start.y - int(start.y)))) if dy != 0 else float('inf')
+
+        x, y = start.x, start.y
+        # Simpler — since your coords are integers:
+        t_x = step_x * 0.5
+        t_y = step_y * 0.5
+
+        while x != end.x or y != end.y:
+            self.intersected_tiles.add(GridPoint(x, y))
+            if t_x < t_y:
+                t_x += step_x
+                x += sx
+            elif t_y < t_x:
+                t_y += step_y
+                y += sy
+            else:
+                # Exact corner crossing — add BOTH neighbours
+                self.intersected_tiles.add(GridPoint(x + sx, y))
+                self.intersected_tiles.add(GridPoint(x, y + sy))
+                t_x += step_x
+                t_y += step_y
+                x += sx
+                y += sy
+
+        self.intersected_tiles.add(GridPoint(end.x, end.y))
+
+
+
     def run(self):
         while self.running:
             self.handle_events()
@@ -143,6 +190,12 @@ class Game:
                     return
                 # Space
                 self.select_unit()
+            if event.key == pygame.K_f and mods & pygame.KMOD_SHIFT:
+                if self.selected_unit is None:
+                    self.ui.log_message("No shooter selected", True, 3, MSG_RED)
+                    return
+                self.calculate_trajectory(self.selected_unit.position, self.cursor.position)
+                return
 
             self._handle_cursor_movement(event)
 
@@ -211,11 +264,28 @@ class Game:
             unit_rect = pygame.Rect(rect_origin_x, rect_origin_y, TILE_REACHABLE_WIDTH, TILE_REACHABLE_HEIGHT)
             pygame.draw.rect(self.screen, COLOR_REACHABLE_TILE, unit_rect)
 
+    def draw_intersected_tiles(self):
+        for position in self.intersected_tiles:
+            unit_origin_pixel_x = position.grid_point().pixel_point().x
+            unit_origin_pixel_y = position.grid_point().pixel_point().y
+            rect_origin_x = unit_origin_pixel_x + TILE_INTERSECTED_ORIGIN_X_OFFSET
+            rect_origin_y = unit_origin_pixel_y + TILE_INTERSECTED_ORIGIN_Y_OFFSET
+
+            unit_rect = pygame.Rect(rect_origin_x, rect_origin_y, TILE_INTERSECTED_WIDTH, TILE_INTERSECTED_HEIGHT)
+            pygame.draw.rect(self.screen, COLOR_INTERSECTED_TILE, unit_rect)
+
+    def draw_trajectory(self):
+        if self.trajectory is None:
+            return
+        pygame.draw.line(self.screen, MSG_RED, self.trajectory[0], self.trajectory[1])
+
     def draw(self):
         self.screen.fill(COLOR_BACKGROUND)
         # grid
         self.grid.draw(self.screen)
         self.draw_reachable_tiles()
+        self.draw_intersected_tiles()
+        self.draw_trajectory()
         # objects
         for obj in self.objects:
             obj.draw(self.screen)
