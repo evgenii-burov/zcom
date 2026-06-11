@@ -16,3 +16,6 @@ class Cover(GameObject):
 
         unit_rect = pygame.Rect(rect_origin_x, rect_origin_y, COVER_WIDTH, COVER_HEIGHT)
         pygame.draw.rect(surface, self.color, unit_rect)
+
+    def __str__(self):
+        return "cover"

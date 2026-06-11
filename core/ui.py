@@ -3,7 +3,7 @@ from objects.cursor import Cursor
 from util.grid import Grid
 from core.state import State
 from core.placeables import Placeable
-from config import SCREEN_WIDTH, SCREEN_HEIGHT, FRAMERATE, TEXT_SPACING, MSG_BLACK, MSG_GREEN, MSG_RED
+from config import SCREEN_WIDTH, SCREEN_HEIGHT, FRAMERATE, TEXT_SPACING, MSG_BLACK, MSG_GREEN, MSG_RED, MSG_BLUE
 from config import TOOLTIP_POSITION_X, TOOLTIP_POSITION_Y, ACTION_LOG_POSITION_X, ACTION_LOG_POSITION_Y
 from config import CURRENT_TILE_INFO_POSITION_X, CURRENT_TILE_INFO_POSITION_Y
 from util.types import PixelPoint
@@ -33,7 +33,7 @@ class MessageBlock:
         self.messages = [message for message in self.messages if message.lifetime > 0]
 
         for message in self.messages:
-            text_surface = self.font.render(message.text, False, message.color)
+            text_surface = self.font.render(message.text, True, message.color)
             surface.blit(text_surface, (position.x, position.y))
             position = PixelPoint(position.x, position.y + self.line_spacing)
 
@@ -46,6 +46,7 @@ class UI:
         self.action_log = MessageBlock(self.font)
 
         self.PLACING_TOOLTIP = MessageBlock(self.font)
+        self.PLACING_TOOLTIP.push("ENTER: finish placing", False, 1, MSG_BLACK)
         self.PLACING_TOOLTIP.push("ARROW KEYS: move cursor", False, 1, MSG_BLACK)
         self.PLACING_TOOLTIP.push("TAB: switch object", False, 1, MSG_BLACK)
 
@@ -61,7 +62,7 @@ class UI:
 
     def draw_cursor_state(self, surface: pygame.Surface, state:State, cursor: Cursor, placeable: Placeable):
         if state == State.PLACING:
-            text_surface = self.font.render(f'Cursor: {placeable.__str__()}', False, MSG_BLACK)
+            text_surface = self.font.render(f'Cursor: {placeable.__str__()}', True, MSG_BLUE)
             surface.blit(text_surface, (CURRENT_TILE_INFO_POSITION_X, CURRENT_TILE_INFO_POSITION_Y))
 
     def draw(self, surface: pygame.Surface, state:State, cursor: Cursor, grid: Grid, placeable: Placeable):

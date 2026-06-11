@@ -69,7 +69,7 @@ class Game:
                 if self.grid.get_tile(obj.position).occupied:
                     self.delete_object(obj.position)
                 self.add_object(obj)
-                self.ui.log_message(f"Placed {obj.__str__()}", True, 3, MSG_GREEN)
+                self.ui.log_message(f"Placed {obj.__str__()}", True, 3, MSG_BLACK)
                 return
 
 
