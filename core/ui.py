@@ -40,18 +40,20 @@ class MessageBlock:
 
 class UI:
     def __init__(self):
-        self.font = pygame.font.SysFont("monospace", 22)
-        self.font.bold = True
+        self.font = pygame.font.SysFont("Fira Code Regular", 30)
+        self.font.bold = False
         self.tooltip = MessageBlock(self.font)
         self.action_log = MessageBlock(self.font)
 
         self.PLACING_TOOLTIP = MessageBlock(self.font)
         self.PLACING_TOOLTIP.push("ENTER: finish placing", False, 1, MSG_BLACK)
-        self.PLACING_TOOLTIP.push("ARROW KEYS: move cursor", False, 1, MSG_BLACK)
         self.PLACING_TOOLTIP.push("TAB: switch object", False, 1, MSG_BLACK)
+        self.PLACING_TOOLTIP.push("SPACE: place object", False, 1, MSG_BLACK)
+        self.PLACING_TOOLTIP.push("ARROW KEYS: move cursor", False, 1, MSG_BLACK)
 
         self.PLAYER_TURN_TOOLTIP = MessageBlock(self.font)
         self.PLAYER_TURN_TOOLTIP.push("ENTER: finish turn", False, 1, MSG_BLACK)
+        self.PLAYER_TURN_TOOLTIP.push("SPACE: select unit", False, 1, MSG_BLACK)
         self.PLAYER_TURN_TOOLTIP.push("ARROW KEYS: move cursor", False, 1, MSG_BLACK)
 
 

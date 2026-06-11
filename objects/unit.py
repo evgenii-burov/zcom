@@ -3,7 +3,7 @@ import pygame
 from objects.base import GameObject
 from util.types import Point, GridPoint
 from core.team import Team
-from config import COLOR_TEAM1, COLOR_TEAM2, UNIT_HEIGHT, UNIT_WIDTH, UNIT_ORIGIN_X_OFFSET, UNIT_ORIGIN_Y_OFFSET
+from config import COLOR_TEAM1, COLOR_TEAM2, UNIT_HEIGHT, UNIT_WIDTH, UNIT_ORIGIN_X_OFFSET, UNIT_ORIGIN_Y_OFFSET, FRAMERATE
 
 
 class Unit(GameObject):
@@ -12,7 +12,20 @@ class Unit(GameObject):
         self.team = team
         self.color = COLOR_TEAM1 if self.team == Team.TEAM1 else COLOR_TEAM2
 
+        self.blink_timer = 0
+        self.blink_interval = .5
+        self.blink_timer_max = self.blink_interval * FRAMERATE * 2
+
+    def update(self):
+        self.hidden = False
+        if self.selected:
+            self.blink_timer = (self.blink_timer + 1) % self.blink_timer_max
+            if self.blink_timer > self.blink_timer_max // 2:
+                self.hidden = True
+
     def draw(self, surface:pygame.Surface):
+        if self.hidden:
+            return
         unit_origin_pixel_x = self.position.grid_point().pixel_point().x
         unit_origin_pixel_y = self.position.grid_point().pixel_point().y
         rect_origin_x = unit_origin_pixel_x + UNIT_ORIGIN_X_OFFSET

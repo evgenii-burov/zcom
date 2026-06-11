@@ -6,6 +6,7 @@ from core.ui import UI
 from core.team import Team
 from objects.cursor import Cursor
 from objects.base import GameObject
+from objects.unit import Unit
 from util.types import Point, GridPoint, PixelPoint, Direction
 from util.grid import Grid
 
@@ -44,6 +45,25 @@ class Game:
         self.grid.place_object(obj)
         self.objects.append(obj)
 
+    def select_object(self):
+        new_selected_unit = self.grid.get_tile(self.cursor.position).obj
+        if new_selected_unit is None:
+            self.ui.log_message("The tile is empty", True, 3, MSG_RED)
+            return
+        elif type(new_selected_unit) is not Unit:
+            self.ui.log_message(f"Only units are selectable", True, 3, MSG_RED)
+            return
+        else:
+            if type(new_selected_unit) is Unit:
+                if new_selected_unit.team is Team.TEAM2:
+                    self.ui.log_message("Only friendly units are selectable", True, 3, MSG_RED)
+                    return
+        if self.selected_unit is not None:
+            self.selected_unit.selected = False
+        self.ui.log_message("Selected a unit", True, 3, MSG_BLUE)
+        self.selected_unit = new_selected_unit
+        self.selected_unit.selected = True
+
     def run(self):
         while self.running:
             self.handle_events()
@@ -64,6 +84,8 @@ class Game:
 
     def _handle_player_turn(self, event):
         if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                self.select_object()
             self._handle_cursor_movement(event)
 
     def _handle_cursor_movement(self, event):
@@ -116,6 +138,8 @@ class Game:
 
     def update(self):
         # objects
+        for obj in self.objects:
+            obj.update()
         # cursor
         self.cursor.update()
 
@@ -127,8 +151,7 @@ class Game:
         for obj in self.objects:
             obj.draw(self.screen)
         # cursor
-        if not self.cursor.hidden:
-            self.cursor.draw(self.screen)
+        self.cursor.draw(self.screen)
         # ui
         self.ui.draw(self.screen, self.state, self.cursor, self.grid, self.placeables[self.current_placeable])
 

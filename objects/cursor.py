@@ -10,15 +10,24 @@ class Cursor(GameObject):
         super().__init__(position, hidden, selected)
         self.grid = grid
         self.color = COLOR_CURSOR
+
+        self.color_range = .25
+        self.color_state = 0
+
         self.blink_timer = 0
         self.blink_interval = .5
 
     def draw(self, surface: pygame.Surface):
+        if self.hidden:
+            return
         center = to_pixel(self.position).tuple()
         center = (center[0] + TILE_SIZE/2, center[1] + TILE_SIZE/2)
         pygame.draw.circle(surface, self.color, center, TILE_SIZE / sqrt(2), 5)
 
     def update(self):
+        # Glimmering cursor
+
+        # Blinking cursor
         self.blink_timer += 1
         if self.blink_timer < FRAMERATE*self.blink_interval:
             return
