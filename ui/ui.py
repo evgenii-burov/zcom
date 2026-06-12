@@ -1,12 +1,12 @@
 import pygame
-from objects.cursor import Cursor
-from util.grid import Grid
-from core.state import State
+from states.state_objects.cursor import Cursor
+from grid.grid import Grid
+from states.state_manager import State
 from core.placeables import Placeable
 from config import SCREEN_WIDTH, SCREEN_HEIGHT, FRAMERATE, TEXT_SPACING, MSG_BLACK, MSG_GREEN, MSG_RED, MSG_BLUE
 from config import TOOLTIP_POSITION_X, TOOLTIP_POSITION_Y, ACTION_LOG_POSITION_X, ACTION_LOG_POSITION_Y
 from config import CURRENT_TILE_INFO_POSITION_X, CURRENT_TILE_INFO_POSITION_Y
-from util.types import PixelPoint
+from grid.types import PixelPoint
 
 
 class Message:
