@@ -40,7 +40,7 @@ class MessageBlock:
 
 class UI:
     def __init__(self):
-        self.font = pygame.font.SysFont("Fira Code Regular", 30)
+        self.font = pygame.font.SysFont("cascadiacoderegular", 30)
         self.font.bold = False
         self.tooltip = MessageBlock(self.font)
         self.action_log = MessageBlock(self.font)
