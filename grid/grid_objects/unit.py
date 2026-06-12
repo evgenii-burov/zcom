@@ -1,9 +1,12 @@
 import pygame
-
-from objects.base import GameObject
-from util.types import Point, GridPoint
-from core.team import Team
+from grid.grid_objects.base import GameObject
+from grid.types import GridPoint
 from config import COLOR_TEAM1, COLOR_TEAM2, UNIT_HEIGHT, UNIT_WIDTH, UNIT_ORIGIN_X_OFFSET, UNIT_ORIGIN_Y_OFFSET, FRAMERATE
+from enum import Enum, auto
+
+class Team(Enum):
+    TEAM1 = auto()
+    TEAM2 = auto()
 
 
 class Unit(GameObject):

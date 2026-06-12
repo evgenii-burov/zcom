@@ -1,5 +1,5 @@
-from objects.base import GameObject
-from util.types import Point, GridPoint
+from grid.grid_objects.base import GameObject
+from grid.types import GridPoint
 import pygame
 from config import COVER_HEIGHT, COVER_WIDTH, COVER_ORIGIN_X_OFFSET, COVER_ORIGIN_Y_OFFSET, COLOR_COVER
 
@@ -19,3 +19,4 @@ class Cover(GameObject):
 
     def __str__(self):
         return "cover"
+    
