@@ -1,10 +1,13 @@
 from enum import Enum, auto
+from config import *
 from grid.grid_objects.unit import Unit
 from grid.grid_objects.cover import Cover
 from grid.types import GridPoint
-from core.team import Team
-from state_manager import StateManager
+from grid.grid_objects.unit import Team
+from state_manager import StateManager, State
+from player_turn_manager import PlayerTurnManager
 from states.state_objects.cursor import Cursor
+import pygame
 
 class Placeable(Enum):
     UNIT_TEAM1 = auto()
@@ -42,8 +45,33 @@ class PlacingManager(StateManager):
         self.current_placeable = self.placeables[0]
         self.cursor = Cursor()
 
-    def handle_events(self):
-        return super().handle_events()
+    def handle_event(self, event: pygame.event.Event):
+        if event.type == pygame.KEYDOWN:
+            # Cursor movement
+            self._handle_cursor_movement(event)
+            # Space for placing
+            if event.key == pygame.K_SPACE:
+                obj = self.placeables[self.current_placeable].get_instance(self.cursor.position)
+                if obj is None:
+                    if self.grid.get_tile(self.cursor.position).occupied:
+                        self.delete_object(self.cursor.position)
+                        return
+                    else:
+                        return
+                if self.grid.get_tile(obj.position).occupied:
+                    self.delete_object(obj.position)
+                self.add_object(obj)
+                self.ui.log_message(f"Placed {obj.__str__()}", True, 3, MSG_BLACK)
+                return
+            # Tab for placeable switching
+            if event.key == pygame.K_TAB:
+                self.current_placeable = (self.current_placeable + 1) % len(self.placeables)
+                return
+            # Enter to finish placing
+            if event.key == pygame.K_RETURN:
+                self.ui.log_message(f"Finished placing", True, 5, MSG_BLUE)
+                self.switch_state(PlayerTurnManager(self.game, State.PLAYER_TURN))
+                return
     
     def update(self):
         return super().update()

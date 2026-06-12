@@ -11,6 +11,8 @@ from objects.base import GameObject
 from objects.unit import Unit
 from util.types import Point, GridPoint, PixelPoint, Direction
 from util.grid import Grid, to_pixel
+from states.state_manager import StateManager, State
+from states.placing_manager import PlacingManager
 from collections import deque
 
 class Game:
@@ -29,11 +31,8 @@ class Game:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.grid = Grid()
         self.clock = pygame.time.Clock()
-        self.state = State.PLACING
+        self.state_manager = PlacingManager(self, State.PLACING)
         self.running = True
-        self.objects = []
-        self.units = []
-        self.cursor = Cursor(GridPoint(GRID_WIDTH/2,GRID_HEIGHT/2), False, False, self.grid)
         self.ui = UI()
         # For State.Placing
         self.placeables = [x for x in Placeable]
@@ -208,53 +207,9 @@ class Game:
 
             self._handle_cursor_movement(event)
 
-    def _handle_cursor_movement(self, event):
-        direction = Direction.NULL
-        distance = 0
-        mods = pygame.key.get_mods()
-        if mods & pygame.KMOD_CTRL:
-            distance = 5
-        else:
-            distance = 1
-        if event.key == pygame.K_LEFT:
-            direction = Direction.LEFT
-        elif event.key == pygame.K_RIGHT:
-            direction = Direction.RIGHT
-        elif event.key == pygame.K_UP:
-            direction = Direction.UP
-        elif event.key == pygame.K_DOWN:
-            direction = Direction.DOWN
-        self.cursor.move(direction, distance)
-
-    def _handle_placing(self, event):
-        if event.type == pygame.KEYDOWN:
-            # Enter to finish placing
-            if event.key == pygame.K_RETURN:
-                self.ui.log_message(f"Finished placing", True, 5, MSG_BLUE)
-                self.state = State.PLAYER_TURN
-                return
-            # Space for placing
-            if event.key == pygame.K_SPACE:
-                obj = self.placeables[self.current_placeable].get_instance(self.cursor.position)
-                if obj is None:
-                    if self.grid.get_tile(self.cursor.position).occupied:
-                        self.delete_object(self.cursor.position)
-                        return
-                    else:
-                        return
-                if self.grid.get_tile(obj.position).occupied:
-                    self.delete_object(obj.position)
-                self.add_object(obj)
-                self.ui.log_message(f"Placed {obj.__str__()}", True, 3, MSG_BLACK)
-                return
 
 
-            # Tab for placeable switching
-            if event.key == pygame.K_TAB:
-                self.current_placeable = (self.current_placeable + 1) % len(self.placeables)
-                return
-            # Cursor movement
-            self._handle_cursor_movement(event)
+    
 
     def update(self):
         # objects
