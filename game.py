@@ -1,5 +1,5 @@
-from queue import Queue
-
+import ctypes
+import sys
 import pygame
 from config import *
 from core.state import State
@@ -15,6 +15,15 @@ from collections import deque
 
 class Game:
     def __init__(self):
+        # Display scale consideration
+        if sys.platform == "win32":
+            try:
+                # Per-monitor DPI awareness (best for multi-monitor setups)
+                ctypes.windll.shcore.SetProcessDpiAwareness(2)
+            except Exception:
+                # Fallback for older Windows
+                ctypes.windll.user32.SetProcessDPIAware()
+        
         # Game initialization
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
