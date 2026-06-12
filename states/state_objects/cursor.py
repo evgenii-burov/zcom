@@ -5,7 +5,8 @@ from math import sqrt
 
 class Cursor:
     def __init__(self, position: GridPoint = (GRID_WIDTH//2, GRID_HEIGHT//2), hidden: bool = False):
-        super().__init__(position, hidden)
+        self.position = position
+        self.hidden = hidden
         self.color = COLOR_CURSOR
 
         self.color_range = .25
@@ -30,3 +31,8 @@ class Cursor:
             return
         self.blink_timer = 0
         self.hidden = not self.hidden
+
+    def move(self, grid_point: GridPoint, bounds: tuple[int, int]):
+        new_x = grid_point[0] % bounds[0]
+        new_y = grid_point[1] % bounds[1]
+        self.position = GridPoint(new_x, new_y)

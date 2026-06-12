@@ -21,7 +21,7 @@ class StateManager:
         self.game = game
         self.state = state
 
-    def handle_events(self):
+    def handle_event(self):
         pass
 
     def update(self):
@@ -29,6 +29,9 @@ class StateManager:
 
     def draw(self):
         pass
+
+    def switch_state(self, state_manager: StateManager):
+        self.game.state_manager = state_manager
 
 
 
