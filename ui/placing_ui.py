@@ -1,6 +1,10 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from ui.base import *
 from config import *
-from states.placing_manager import Placeable
+
+if TYPE_CHECKING:
+    from states.placing_manager import Placeable
 
 class PlacingUI(UI):
     def __init__(self):
