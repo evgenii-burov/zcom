@@ -1,23 +1,17 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
 from .state_manager import StateManager, State
 import pygame
 from ui.dummy_ui import DummyUI
-from grid.grid_objects.unit import Team
 from config import *
 from collections import deque
-from .player_turn_manager import PlayerTurnManager
-if TYPE_CHECKING:
-    from .player_turn_manager import PlayerTurnManager
+
 
 class MoveAnimationManager(StateManager):
-    def __init__(self, game, current_team: Team, endpoints: tuple[int, int], reachable_tiles: list[tuple[int, int]], state=State.ANIMATING, ui=DummyUI()):
-        super().__init__(game, state, ui)
-        self.current_team = current_team
-        self.endpoints = endpoints
-        self.reachable_tiles = reachable_tiles
+    def __init__(self, game, ui=DummyUI()):
+        super().__init__(game, ui)
+        self.endpoints = self.game.move_endpoints
+        self.reachable_tiles = self.game.reachable_tiles
         # ms
-        self.time_to_update = 300
+        self.time_to_update = 150
         # time elapsed (resets when time to update is hit)
         self.time_elapsed = 0
         self.path = self.calculate_path(self.endpoints)
@@ -25,7 +19,7 @@ class MoveAnimationManager(StateManager):
 
     def calculate_path(self, endpoints: tuple) -> list[tuple]:
         adjacent = ((0, 1), (0, -1), (1, 0), (-1, 0))
-        start, end = self.endpoints
+        start, end = endpoints
         predecessor = {start: None}
         tiles_queued = deque([start])
 
@@ -64,9 +58,7 @@ class MoveAnimationManager(StateManager):
         super().update()
         self.time_elapsed += self.game.ms_since_last_frame
         if self.current_path_index >= len(self.path) - 1:
-            if self.current_team == Team.TEAM1:
-                state_manager = PlayerTurnManager(self.game)
-            self.switch_state(state_manager)
+            self.switch_state(State.PLAYER_TURN)
             return
         if self.time_elapsed > self.time_to_update:
             self.time_elapsed = 0

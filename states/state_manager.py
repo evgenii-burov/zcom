@@ -18,9 +18,8 @@ class State(Enum):
 
 
 class StateManager:
-    def __init__(self, game: Game, state:State, ui: UI):
+    def __init__(self, game: Game, ui: UI):
         self.game = game
-        self.state = state
         self.ui = ui
 
     def handle_event(self, event: pygame.event.Event):
@@ -34,8 +33,8 @@ class StateManager:
         self.game.grid.draw(self.game.screen)
         return
 
-    def switch_state(self, state_manager: StateManager):
-        self.game.state_manager = state_manager
+    def switch_state(self, state: State):
+        self.game.state = state
 
 
 

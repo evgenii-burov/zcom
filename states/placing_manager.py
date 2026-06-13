@@ -42,8 +42,8 @@ class Placeable(Enum):
 
 
 class PlacingManager(StateManager):
-    def __init__(self, game, state=State.PLACING, ui=PlacingUI()):
-        super().__init__(game, state, ui)
+    def __init__(self, game, ui=PlacingUI()):
+        super().__init__(game, ui)
         self.placeables = [x for x in Placeable]
         self.current_placeable_index = 0
         self.current_placeable = self.placeables[self.current_placeable_index]
@@ -71,7 +71,7 @@ class PlacingManager(StateManager):
             # Enter to finish placing
             if event.key == pygame.K_RETURN:
                 self.ui.log_message(f"Finished placing", True, 5, MSG_BLUE)
-                self.switch_state(PlayerTurnManager(self.game))
+                self.switch_state(State.PLAYER_TURN)
                 return
     
     def update(self):

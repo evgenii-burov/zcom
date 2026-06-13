@@ -10,20 +10,20 @@ from collections import deque
 import pygame
 
 class PlayerTurnManager(StateManager):
-    def __init__(self, game, state=State.PLAYER_TURN, ui=PlayerTurnUI()):
-        super().__init__(game, state, ui)
+    def __init__(self, game, ui=PlayerTurnUI()):
+        super().__init__(game, ui)
         self.cursor = Cursor()
         self.current_team = Team.TEAM1
         self.selected_unit: Unit | None = None
-        self.reachable_tiles = set()
+        self.game.reachable_tiles = set()
         self.intersected_tiles = set()
         self.trajectory = None
 
     def move_unit(self, start: GridPoint, end: GridPoint):
         # Animated motion
-        self.state = State.ANIMATING
         self.selected_unit.selected = False
-        self.switch_state(MoveAnimationManager(self.game, Team.TEAM1, (start, end), self.reachable_tiles))
+        self.game.move_endpoints = (start, end)
+        self.switch_state(State.ANIMATING)
 
         # path = self.calculate_path
 
@@ -47,7 +47,7 @@ class PlayerTurnManager(StateManager):
                 if visited[current_tile] < movement_left:
                     visited[current_tile] = movement_left
 
-            self.reachable_tiles.add(current_tile)
+            self.game.reachable_tiles.add(current_tile)
             if movement_left == 0:
                 continue
             for move in adjacent:
@@ -61,7 +61,7 @@ class PlayerTurnManager(StateManager):
         if self.selected_unit is not None:
             self.selected_unit.selected = False
             self.selected_unit = None
-            self.reachable_tiles = set()
+            self.game.reachable_tiles = set()
             return
         if not self.game.grid.get_tile(grid_point).occupied and self.selected_unit is None:
             self.ui.log_message("Nothing to select", True, 3, MSG_RED)
@@ -89,7 +89,7 @@ class PlayerTurnManager(StateManager):
                     if self.game.grid.get_tile(self.cursor.position).occupied:
                         self.ui.log_message("Tile occupied", True, 3, MSG_RED)
                         return
-                    if self.game.grid.get_tile(self.cursor.position).position not in self.reachable_tiles:
+                    if self.game.grid.get_tile(self.cursor.position).position not in self.game.reachable_tiles:
                         self.ui.log_message("Can't reach", True, 3, MSG_RED)
                         return
                     self.move_unit(self.selected_unit.position, self.cursor.position)
@@ -108,7 +108,7 @@ class PlayerTurnManager(StateManager):
         return super().update()
     
     def draw_reachable_tiles(self, surface: pygame.Surface):
-        for position in self.reachable_tiles:
+        for position in self.game.reachable_tiles:
             tile_origin_pixel_x = to_pixel(position)[0]
             tile_origin_pixel_y = to_pixel(position)[1]
             rect_origin_x = tile_origin_pixel_x + TILE_REACHABLE_ORIGIN_X_OFFSET

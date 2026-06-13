@@ -35,7 +35,7 @@ class MessageBlock:
 class UI:
     def __init__(self):
         pygame.font.init()
-        self.font = pygame.font.SysFont("comicsans", 30)
+        self.font = pygame.font.SysFont("trebuchetms", 30)
         self.font.bold = False
         self.tooltip = MessageBlock(self.font)
         self.action_log = MessageBlock(self.font)

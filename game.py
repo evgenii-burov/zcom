@@ -5,6 +5,9 @@ from config import *
 from grid.grid import Grid, GridPoint
 from grid.grid_objects.unit import Unit, Team
 from states.placing_manager import PlacingManager
+from states.state_manager import State
+from states.player_turn_manager import PlayerTurnManager
+from states.move_animation_manager import MoveAnimationManager
 from collections import deque
 
 class Game:
@@ -25,7 +28,12 @@ class Game:
         self.clock = pygame.time.Clock()
         self.current_tick = 0
         self.state_manager = PlacingManager(self)
+        self.state = State.PLACING
         self.running = True
+        self.reachable_tiles = set()
+        self.move_endpoints = tuple[int, int]
+        self.current_team = Team.TEAM1
+
         # For State.Placing
         # For State.PlayerTurn or EnemyTurn
         # self.teams = [x for x in Team]
@@ -185,7 +193,12 @@ class Game:
 
     def update(self):
         self.state_manager.update()
-        
+        if self.state == State.PLAYER_TURN and type(self.state_manager) is PlacingManager:
+            self.state_manager = PlayerTurnManager(self)
+        elif self.state == State.ANIMATING and type(self.state_manager) is PlayerTurnManager:
+            self.state_manager = MoveAnimationManager(self)
+        elif self.state == State.PLAYER_TURN and type(self.state_manager) is MoveAnimationManager:
+            self.state_manager = PlayerTurnManager(self)
     def draw_reachable_tiles(self):
         for position in self.reachable_tiles:
             unit_origin_pixel_x = position.grid_point().pixel_point().x
