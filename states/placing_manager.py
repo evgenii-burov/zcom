@@ -71,7 +71,7 @@ class PlacingManager(StateManager):
             # Enter to finish placing
             if event.key == pygame.K_RETURN:
                 self.ui.log_message(f"Finished placing", True, 5, MSG_BLUE)
-                self.switch_state(PlayerTurnManager(self.game, State.PLAYER_TURN))
+                self.switch_state(PlayerTurnManager(self.game))
                 return
     
     def update(self):
