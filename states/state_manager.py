@@ -1,6 +1,6 @@
 from __future__ import annotations
-from enum import Enum, auto
 from typing import TYPE_CHECKING
+from enum import Enum, auto
 from states.state_objects.cursor import Cursor
 from ui.base import UI
 

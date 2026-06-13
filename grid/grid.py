@@ -1,6 +1,6 @@
 import pygame
 
-from grid.types import GridPoint, OutOfBoundsError, TileOccupiedError
+from grid.types import GridPoint, OutOfBoundsError, TileOccupiedError, to_pixel
 from  grid.grid_objects.base import GameObject
 from config import GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, COLOR_TILE, TILE_RENDER_SCALE
 
@@ -30,8 +30,8 @@ class Grid:
     def __init__(self, width: int=GRID_WIDTH, height: int=GRID_HEIGHT):
         self.width = width
         self.height = height
-        self.tiles = [[Tile(GridPoint(x, y)) for x in range(width)] for y in range(height)]
-        self.objects = list[GameObject]
+        self.tiles = [[Tile((x, y)) for x in range(width)] for y in range(height)]
+        self.objects: list[GameObject] = []
 
     def update(self):
         for obj in self.objects:
