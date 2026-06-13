@@ -1,8 +1,8 @@
-from enum import Enum, auto
 from __future__ import annotations
+from enum import Enum, auto
 from typing import TYPE_CHECKING
 from states.state_objects.cursor import Cursor
-from config import CE
+from ui.base import UI
 
 if TYPE_CHECKING:
     from game import Game
@@ -17,18 +17,21 @@ class State(Enum):
 
 
 class StateManager:
-    def __init__(self, game: Game, state:State):
+    def __init__(self, game: Game, state:State, ui: UI):
         self.game = game
         self.state = state
+        self.ui = ui
 
     def handle_event(self):
         pass
 
     def update(self):
-        pass
+        self.game.grid.update()
+        return
 
     def draw(self):
-        pass
+        self.game.grid.draw(self.game.screen)
+        return
 
     def switch_state(self, state_manager: StateManager):
         self.game.state_manager = state_manager
