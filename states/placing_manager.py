@@ -8,6 +8,7 @@ from grid.grid_objects.unit import Team
 from .state_manager import StateManager, State
 from .player_turn_manager import PlayerTurnManager
 from .state_objects.cursor import Cursor
+from .util.handle_cursor_movement import handle_cursor_movement
 from ui.placing_ui import PlacingUI
 import pygame
 
@@ -41,19 +42,20 @@ class Placeable(Enum):
 
 
 class PlacingManager(StateManager):
-    def __init__(self, game, state=State.PLACING, ui=PlacingUI):
+    def __init__(self, game, state=State.PLACING, ui=PlacingUI()):
         super().__init__(game, state, ui)
         self.placeables = [x for x in Placeable]
-        self.current_placeable = self.placeables[0]
+        self.current_placeable_index = 0
+        self.current_placeable = self.placeables[self.current_placeable_index]
         self.cursor = Cursor()
 
     def handle_event(self, event: pygame.event.Event):
         if event.type == pygame.KEYDOWN:
             # Cursor movement
-            self._handle_cursor_movement(event)
+            handle_cursor_movement(event, self.cursor, (self.game.grid.width, self.game.grid.height))
             # Space for placing
             if event.key == pygame.K_SPACE:
-                obj = self.placeables[self.current_placeable].get_instance(self.cursor.position)
+                obj = self.current_placeable.get_instance(self.cursor.position)
                 if obj is None:
                     self.game.grid.remove_object(self.cursor.position)
                     return
@@ -63,7 +65,8 @@ class PlacingManager(StateManager):
                 return
             # Tab for placeable switching
             if event.key == pygame.K_TAB:
-                self.current_placeable = (self.current_placeable + 1) % len(self.placeables)
+                self.current_placeable_index = (self.current_placeable_index + 1) % len(self.placeables)
+                self.current_placeable = self.placeables[self.current_placeable_index]
                 return
             # Enter to finish placing
             if event.key == pygame.K_RETURN:
@@ -78,4 +81,4 @@ class PlacingManager(StateManager):
     def draw(self):
         super().draw()
         self.cursor.draw(self.game.screen)
-        self.ui.draw(self.game.screen)
+        self.ui.draw(self.game.screen, self.current_placeable)

@@ -1,7 +1,7 @@
 import pygame
-from state_objects.cursor import Cursor
+from ..state_objects.cursor import Cursor
 
-def handle_cursor_movement(self, event: pygame.event.Event, cursor: Cursor, bounds: tuple[int, int]):
+def handle_cursor_movement(event: pygame.event.Event, cursor: Cursor, bounds: tuple[int, int]):
     cursor_position_x, cursor_position_y = cursor.position
     new_position = (cursor_position_x, cursor_position_y)
     distance = 0
@@ -18,4 +18,4 @@ def handle_cursor_movement(self, event: pygame.event.Event, cursor: Cursor, boun
         new_position = (cursor_position_x, cursor_position_y - distance)
     elif event.key == pygame.K_DOWN:
         new_position = (cursor_position_x, cursor_position_y + distance)
-    self.cursor.move(new_position, bounds)
+    cursor.move(new_position, bounds)

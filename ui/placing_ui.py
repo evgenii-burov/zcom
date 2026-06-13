@@ -22,12 +22,12 @@ class PlacingUI(UI):
         # self.PLAYER_TURN_TOOLTIP.push("ARROW KEYS: move cursor", False, 1, MSG_BLACK)
 
     def draw_tooltip(self, surface: pygame.Surface):
-        self.PLACING_TOOLTIP.render(surface, PixelPoint(TOOLTIP_POSITION_X, TOOLTIP_POSITION_Y))
+        self.PLACING_TOOLTIP.render(surface, (TOOLTIP_POSITION_X, TOOLTIP_POSITION_Y))
         # if state == State.PLAYER_TURN:
         #     self.PLAYER_TURN_TOOLTIP.render(surface, PixelPoint(TOOLTIP_POSITION_X, TOOLTIP_POSITION_Y))
 
     def draw_action_log(self, surface: pygame.Surface):
-        self.action_log.render(surface, PixelPoint(ACTION_LOG_POSITION_X, ACTION_LOG_POSITION_Y))
+        self.action_log.render(surface, (ACTION_LOG_POSITION_X, ACTION_LOG_POSITION_Y))
 
     def draw_cursor_state(self, surface: pygame.Surface, placeable: Placeable):
         text_surface = self.font.render(f'Cursor: {placeable.__str__()}', True, MSG_BLUE)

@@ -17,7 +17,7 @@ class Tile:
 
     def draw(self, surface):
         origin = to_pixel(self.position)
-        pygame.draw.rect(surface, COLOR_TILE, pygame.Rect(origin.x, origin.y, TILE_SIZE*TILE_RENDER_SCALE, TILE_SIZE*TILE_RENDER_SCALE), 1)
+        pygame.draw.rect(surface, COLOR_TILE, pygame.Rect(origin[0], origin[1], TILE_SIZE*TILE_RENDER_SCALE, TILE_SIZE*TILE_RENDER_SCALE), 1)
 
     def __str__(self):
         if self.obj is None:
@@ -45,7 +45,7 @@ class Grid:
             obj.draw(surface)
 
     def get_tile(self, grid_point: GridPoint) -> Tile:
-        return self.tiles[grid_point.y][grid_point.x]
+        return self.tiles[grid_point[1]][grid_point[0]]
 
     def place_object(self, obj: GameObject):
         """

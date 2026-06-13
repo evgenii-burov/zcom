@@ -1,6 +1,6 @@
 import pygame
 from grid.grid_objects.base import GameObject
-from grid.types import GridPoint
+from grid.types import GridPoint, to_pixel
 from config import COLOR_TEAM1, COLOR_TEAM2, UNIT_HEIGHT, UNIT_WIDTH, UNIT_ORIGIN_X_OFFSET, UNIT_ORIGIN_Y_OFFSET, FRAMERATE
 from enum import Enum, auto
 
@@ -33,8 +33,8 @@ class Unit(GameObject):
     def draw(self, surface:pygame.Surface):
         if self.hidden:
             return
-        unit_origin_pixel_x = self.position.grid_point().pixel_point().x
-        unit_origin_pixel_y = self.position.grid_point().pixel_point().y
+        unit_origin_pixel_x = to_pixel(self.position)[0]
+        unit_origin_pixel_y = to_pixel(self.position)[1]
         rect_origin_x = unit_origin_pixel_x + UNIT_ORIGIN_X_OFFSET
         rect_origin_y = unit_origin_pixel_y + UNIT_ORIGIN_Y_OFFSET
 
