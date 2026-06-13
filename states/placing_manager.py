@@ -1,12 +1,14 @@
 from enum import Enum, auto
 from config import *
+from grid.grid_objects.base import GameObject
 from grid.grid_objects.unit import Unit
 from grid.grid_objects.cover import Cover
 from grid.types import GridPoint
 from grid.grid_objects.unit import Team
-from state_manager import StateManager, State
-from player_turn_manager import PlayerTurnManager
-from states.state_objects.cursor import Cursor
+from .state_manager import StateManager, State
+from .player_turn_manager import PlayerTurnManager
+from .state_objects.cursor import Cursor
+from ui.placing_ui import PlacingUI
 import pygame
 
 class Placeable(Enum):
@@ -15,7 +17,7 @@ class Placeable(Enum):
     COVER = auto()
     DELETE = auto()
 
-    def get_instance(self, grid_point: GridPoint):
+    def get_instance(self, grid_point: GridPoint) -> GameObject | None:
         match self:
             case Placeable.DELETE:
                 return None
@@ -39,8 +41,8 @@ class Placeable(Enum):
 
 
 class PlacingManager(StateManager):
-    def __init__(self, game, state):
-        super().__init__(game, state)
+    def __init__(self, game, state=State.PLACING, ui=PlacingUI):
+        super().__init__(game, state, ui)
         self.placeables = [x for x in Placeable]
         self.current_placeable = self.placeables[0]
         self.cursor = Cursor()
@@ -53,14 +55,10 @@ class PlacingManager(StateManager):
             if event.key == pygame.K_SPACE:
                 obj = self.placeables[self.current_placeable].get_instance(self.cursor.position)
                 if obj is None:
-                    if self.grid.get_tile(self.cursor.position).occupied:
-                        self.delete_object(self.cursor.position)
-                        return
-                    else:
-                        return
-                if self.grid.get_tile(obj.position).occupied:
-                    self.delete_object(obj.position)
-                self.add_object(obj)
+                    self.game.grid.remove_object(self.cursor.position)
+                    return
+                self.game.grid.remove_object(obj.position)
+                self.game.grid.place_object(obj)
                 self.ui.log_message(f"Placed {obj.__str__()}", True, 3, MSG_BLACK)
                 return
             # Tab for placeable switching
@@ -74,7 +72,10 @@ class PlacingManager(StateManager):
                 return
     
     def update(self):
-        return super().update()
+        super().update()
+
     
     def draw(self):
-        return super().draw()
+        super().draw()
+        self.cursor.draw(self.game.screen)
+        self.ui.draw(self.game.screen)

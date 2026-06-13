@@ -33,10 +33,16 @@ class Grid:
         self.tiles = [[Tile(GridPoint(x, y)) for x in range(width)] for y in range(height)]
         self.objects = list[GameObject]
 
+    def update(self):
+        for obj in self.objects:
+            obj.update()
+
     def draw(self, surface: pygame.Surface):
         for line in self.tiles:
             for tile in line:
                 tile.draw(surface)
+        for obj in self.objects:
+            obj.draw(surface)
 
     def get_tile(self, grid_point: GridPoint) -> Tile:
         return self.tiles[grid_point.y][grid_point.x]
