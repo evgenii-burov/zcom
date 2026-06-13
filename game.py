@@ -23,6 +23,7 @@ class Game:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.grid = Grid()
         self.clock = pygame.time.Clock()
+        self.current_tick = 0
         self.state_manager = PlacingManager(self)
         self.running = True
         # For State.Placing
@@ -152,7 +153,7 @@ class Game:
             self.update()
             self.draw()
             pygame.display.flip()
-            self.clock.tick(FRAMERATE)
+            self.ms_since_last_frame = self.clock.tick(FRAMERATE)
         pygame.quit()
     
     def handle_events(self):

@@ -1,4 +1,5 @@
 from .state_manager import StateManager, State
+from .move_animation_manager import MoveAnimationManager
 from ui.player_turn_ui import PlayerTurnUI
 from grid.grid_objects.unit import Team, Unit
 from grid.types import GridPoint, to_pixel
@@ -19,10 +20,19 @@ class PlayerTurnManager(StateManager):
         self.trajectory = None
 
     def move_unit(self, start: GridPoint, end: GridPoint):
-        self.game.grid.move_object(start, end)
+        # Animated motion
+        self.state = State.ANIMATING
         self.selected_unit.selected = False
-        self.selected_unit = None
-        self.reachable_tiles = set()
+        self.switch_state(MoveAnimationManager(self.game, Team.TEAM1, (start, end), self.reachable_tiles))
+
+        # path = self.calculate_path
+
+        # self.game.grid.move_object(start, end)
+        # self.selected_unit.selected = False
+        # self.selected_unit = None
+        # self.reachable_tiles = set()
+
+
 
     def calculate_reachable_tiles(self):
         adjacent = ((0,1),(0,-1),(1,0),(-1,0))

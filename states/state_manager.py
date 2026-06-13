@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from enum import Enum, auto
 from states.state_objects.cursor import Cursor
 from ui.base import UI
+import pygame
 
 if TYPE_CHECKING:
     from game import Game
@@ -22,7 +23,7 @@ class StateManager:
         self.state = state
         self.ui = ui
 
-    def handle_event(self):
+    def handle_event(self, event: pygame.event.Event):
         pass
 
     def update(self):
