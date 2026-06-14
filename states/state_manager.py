@@ -13,7 +13,8 @@ class State(Enum):
     PLACING = auto()
     PLAYER_TURN = auto()
     AI_TURN = auto()
-    ANIMATING = auto()
+    MOVE_ANIMATION = auto()
+    SHOT_ANIMATION = auto()
     GAME_OVER = auto()
 
 

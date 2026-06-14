@@ -1,7 +1,8 @@
 from .state_manager import StateManager, State
-from .move_animation_manager import MoveAnimationManager
+from .move_manager import MoveAnimationManager
 from ui.player_turn_ui import PlayerTurnUI
 from grid.grid_objects.unit import Team, Unit
+from grid.grid_objects.cover import Cover
 from grid.types import GridPoint, to_pixel
 from .state_objects.cursor import Cursor
 from .util.handle_cursor_movement import handle_cursor_movement
@@ -18,12 +19,15 @@ class PlayerTurnManager(StateManager):
         self.game.reachable_tiles = set()
         self.intersected_tiles = set()
         self.trajectory = None
+        self.shot_probability = 0
 
     def move_unit(self, start: GridPoint, end: GridPoint):
         # Animated motion
         self.selected_unit.selected = False
+        self.shot_probability = 0
+        self.game.shot_probability = self.shot_probability
         self.game.move_endpoints = (start, end)
-        self.switch_state(State.ANIMATING)
+        self.switch_state(State.MOVE_ANIMATION)
 
         # path = self.calculate_path
 
@@ -32,7 +36,40 @@ class PlayerTurnManager(StateManager):
         # self.selected_unit = None
         # self.reachable_tiles = set()
 
+    def calculate_probability(self, start: GridPoint, end: GridPoint):
+        self.shot_probability = self.selected_unit.base_hit_change
 
+        x0, y0 = start
+        x1, y1 = end
+        
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx - dy
+        
+        excluded = {
+            (x0 + i, y0 + j)
+            for i in range(-1, 2)
+            for j in range(-1, 2)
+        }
+        
+        x, y = x0, y0
+        
+        while (x, y) != (x1, y1):
+            if (x, y) not in excluded:
+                tile = self.game.grid.get_tile((x, y))
+                if type(tile.obj) is Cover:
+                    self.shot_probability *= tile.obj.protection
+            
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x += sx
+            if e2 < dx:
+                err += dx
+                y += sy
+        self.game.shot_probability = self.shot_probability
 
     def calculate_reachable_tiles(self):
         adjacent = ((0,1),(0,-1),(1,0),(-1,0))
@@ -62,6 +99,8 @@ class PlayerTurnManager(StateManager):
             self.selected_unit.selected = False
             self.selected_unit = None
             self.game.reachable_tiles = set()
+            self.shot_probability = 0
+            self.game.shot_probability = self.shot_probability
             return
         if not self.game.grid.get_tile(grid_point).occupied and self.selected_unit is None:
             self.ui.log_message("Nothing to select", True, 3, MSG_RED)
@@ -74,6 +113,8 @@ class PlayerTurnManager(StateManager):
             return
         self.selected_unit = self.game.grid.get_tile(grid_point).obj
         self.selected_unit.selected= True
+        self.shot_probability = 0
+        self.game.shot_probability = self.shot_probability
 
         self.calculate_reachable_tiles()
 
@@ -82,6 +123,11 @@ class PlayerTurnManager(StateManager):
         if event.type == pygame.KEYDOWN:
             # Cursor movement
             handle_cursor_movement(event, self.cursor, (self.game.grid.width, self.game.grid.height))
+            if type(self.selected_unit) is not None:
+                if event.key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN):
+                    self.calculate_probability(self.selected_unit.position, self.cursor.position)
+
+            # Unit selection and movement
             if event.key == pygame.K_SPACE:
                 # Shift+space
                 if mods & pygame.KMOD_SHIFT:
@@ -96,12 +142,20 @@ class PlayerTurnManager(StateManager):
                     return
                 # Space
                 self.select_unit(self.cursor.position)
-            # if event.key == pygame.K_f and mods & pygame.KMOD_SHIFT:
-            #     if self.selected_unit is None:
-            #         self.ui.log_message("No shooter selected", True, 3, MSG_RED)
-            #         return
-            #     self.calculate_trajectory(self.selected_unit.position, self.cursor.position)
-            #     return
+                return
+            
+           
+            if event.key == pygame.K_f:
+                 # F: check accuracy
+                if not mods & pygame.KMOD_SHIFT:
+                # Shift+F: make a shot
+                else:
+                    if self.selected_unit is None:
+                        self.ui.log_message("No shooter selected", True, 3, MSG_RED)
+                        return
+                    self.game.shooter_and_target = (self.selected_unit.position, self.cursor.position)
+                    self.switch_state(State.SHOT_ANIMATION)
+                    return
 
             
     def update(self):

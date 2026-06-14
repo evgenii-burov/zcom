@@ -18,6 +18,7 @@ class Unit(GameObject):
         self.moved = False
         self.acted = False
         self.color = COLOR_TEAM1 if self.team == Team.TEAM1 else COLOR_TEAM2
+        self.base_hit_change = .9
 
         self.blink_timer = 0
         self.blink_interval = .5

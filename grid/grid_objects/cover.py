@@ -7,6 +7,7 @@ class Cover(GameObject):
     def __init__(self, grid_point:GridPoint, hidden:bool, selected: bool):
         super().__init__(grid_point, hidden, selected)
         self.color = COLOR_COVER
+        self.protection = .3
 
     def draw(self, surface:pygame.Surface):
         cover_origin_pixel_x = to_pixel(self.position)[0]

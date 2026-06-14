@@ -17,10 +17,14 @@ class PlayerTurnUI(UI):
     def draw_action_log(self, surface: pygame.Surface):
         self.action_log.render(surface, (ACTION_LOG_POSITION_X, ACTION_LOG_POSITION_Y))
 
-    def draw_cursor_state(self, surface: pygame.Surface, grid: Grid, cursor: Cursor):
-        tooltip = grid.get_tile(cursor.position).__str__()
-        text_surface = self.font.render(tooltip, True, MSG_BLUE)
-        surface.blit(text_surface, (CURRENT_TILE_INFO_POSITION_X, CURRENT_TILE_INFO_POSITION_Y))
+    def draw_cursor_state(self, surface: pygame.Surface, grid: Grid, cursor: Cursor, accuracy: float):
+        if abs(accuracy - 1e-7) < 0:
+            tooltip = grid.get_tile(cursor.position).__str__()
+            text_surface = self.font.render(tooltip, True, MSG_BLUE)
+            surface.blit(text_surface, (CURRENT_TILE_INFO_POSITION_X, CURRENT_TILE_INFO_POSITION_Y))
+        else:
+            text_surface = self.font.render(f"Chance to hit: {accuracy}", True, MSG_BLUE)
+            surface.blit(text_surface, (CURRENT_TILE_INFO_POSITION_X, CURRENT_TILE_INFO_POSITION_Y))
 
     def draw(self, surface: pygame.Surface, grid: Grid, cursor: Cursor):
         self.draw_tooltip(surface)
