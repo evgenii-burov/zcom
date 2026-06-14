@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from enum import Enum, auto
 from states.state_objects.cursor import Cursor
 from ui.base import UI
+import pygame
 
 if TYPE_CHECKING:
     from game import Game
@@ -12,17 +13,17 @@ class State(Enum):
     PLACING = auto()
     PLAYER_TURN = auto()
     AI_TURN = auto()
-    ANIMATING = auto()
+    MOVE_ANIMATION = auto()
+    SHOT_ANIMATION = auto()
     GAME_OVER = auto()
 
 
 class StateManager:
-    def __init__(self, game: Game, state:State, ui: UI):
+    def __init__(self, game: Game, ui: UI):
         self.game = game
-        self.state = state
         self.ui = ui
 
-    def handle_event(self):
+    def handle_event(self, event: pygame.event.Event):
         pass
 
     def update(self):
@@ -33,8 +34,8 @@ class StateManager:
         self.game.grid.draw(self.game.screen)
         return
 
-    def switch_state(self, state_manager: StateManager):
-        self.game.state_manager = state_manager
+    def switch_state(self, state: State):
+        self.game.state = state
 
 
 

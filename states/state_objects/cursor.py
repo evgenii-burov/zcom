@@ -18,7 +18,7 @@ class Cursor:
     def draw(self, surface: pygame.Surface):
         if self.hidden:
             return
-        center = to_pixel(self.position).tuple()
+        center = to_pixel(self.position)
         center = (center[0] + TILE_SIZE/2, center[1] + TILE_SIZE/2)
         pygame.draw.circle(surface, self.color, center, TILE_SIZE / sqrt(2), 5)
 
@@ -35,4 +35,4 @@ class Cursor:
     def move(self, grid_point: GridPoint, bounds: tuple[int, int]):
         new_x = grid_point[0] % bounds[0]
         new_y = grid_point[1] % bounds[1]
-        self.position = GridPoint(new_x, new_y)
+        self.position = (new_x, new_y)

@@ -28,13 +28,14 @@ class MessageBlock:
 
         for message in self.messages:
             text_surface = self.font.render(message.text, True, message.color)
-            surface.blit(text_surface, (position.x, position.y))
-            position = PixelPoint(position.x, position.y + self.line_spacing)
+            surface.blit(text_surface, position)
+            position = (position[0], position[1] + self.line_spacing)
 
 
 class UI:
     def __init__(self):
-        self.font = pygame.font.SysFont("cascadiacoderegular", 30)
+        pygame.font.init()
+        self.font = pygame.font.SysFont("trebuchetms", 30)
         self.font.bold = False
         self.tooltip = MessageBlock(self.font)
         self.action_log = MessageBlock(self.font)

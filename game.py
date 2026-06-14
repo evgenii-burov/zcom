@@ -5,6 +5,9 @@ from config import *
 from grid.grid import Grid, GridPoint
 from grid.grid_objects.unit import Unit, Team
 from states.placing_manager import PlacingManager
+from states.state_manager import State
+from states.player_turn_manager import PlayerTurnManager
+from states.move_manager import MoveAnimationManager
 from collections import deque
 
 class Game:
@@ -23,8 +26,15 @@ class Game:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.grid = Grid()
         self.clock = pygame.time.Clock()
+        self.current_tick = 0
         self.state_manager = PlacingManager(self)
+        self.state = State.PLACING
         self.running = True
+        self.reachable_tiles = set()
+        self.move_endpoints = tuple[int, int]
+        self.current_team = Team.TEAM1
+        self.shooter_and_target = tuple[int, int]
+        self.shot_probability = 0
         # For State.Placing
         # For State.PlayerTurn or EnemyTurn
         # self.teams = [x for x in Team]
@@ -152,7 +162,7 @@ class Game:
             self.update()
             self.draw()
             pygame.display.flip()
-            self.clock.tick(FRAMERATE)
+            self.ms_since_last_frame = self.clock.tick(FRAMERATE)
         pygame.quit()
     
     def handle_events(self):
@@ -162,29 +172,17 @@ class Game:
                 return
             self.state_manager.handle_event(event)
 
-    def _handle_player_turn(self, event):
-        mods = pygame.key.get_mods()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                # Shift+space
-                if mods & pygame.KMOD_SHIFT:
-                    # Move unit
-                    self.move_unit()
-                    return
-                # Space
-                self.select_unit()
-            if event.key == pygame.K_f and mods & pygame.KMOD_SHIFT:
-                if self.selected_unit is None:
-                    self.ui.log_message("No shooter selected", True, 3, MSG_RED)
-                    return
-                self.calculate_trajectory(self.selected_unit.position, self.cursor.position)
-                return
-
-            self._handle_cursor_movement(event)
-
     def update(self):
         self.state_manager.update()
-        
+        if self.state == State.PLAYER_TURN and type(self.state_manager) is PlacingManager:
+            self.state_manager = PlayerTurnManager(self)
+        elif self.state == State.MOVE_ANIMATION and type(self.state_manager) is PlayerTurnManager:
+            self.state_manager = MoveAnimationManager(self)
+        elif self.state == State.PLAYER_TURN and type(self.state_manager) is MoveAnimationManager:
+            self.state_manager = PlayerTurnManager(self)
+        elif self.state == State.SHOT_ANIMATION and type(self.state_manager) is PlayerTurnManager:
+            self.state_manager = PlayerTurnManager(self)
+
     def draw_reachable_tiles(self):
         for position in self.reachable_tiles:
             unit_origin_pixel_x = position.grid_point().pixel_point().x
