@@ -28,3 +28,6 @@ def to_pixel(grid_point: GridPoint) -> PixelPoint:
 
 def center(grid_point: GridPoint) -> PixelPoint:
     return grid_point[0]*TILE_SIZE + TILE_SIZE//2, grid_point[1]*TILE_SIZE+ TILE_SIZE//2
+
+def to_grid(pixel_point: PixelPoint)->GridPoint:
+    return(int(pixel_point[0]//TILE_SIZE),int(pixel_point[1]//TILE_SIZE))

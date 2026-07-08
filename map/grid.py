@@ -1,13 +1,13 @@
 import pygame
 
-from grid.types import GridPoint, OutOfBoundsError, TileOccupiedError, to_pixel
-from  grid.grid_objects.base import GameObject
-from config import GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, COLOR_TILE, TILE_RENDER_SCALE
+from map.types import GridPoint, OutOfBoundsError, TileOccupiedError, to_pixel
+from entities.grid_entities.base import GridEntity
+from config import GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, COLOR_TILE
 
 class Tile:
     def __init__(self, grid_point: GridPoint):
         self.position = grid_point
-        self.obj: GameObject | None = None
+        self.obj: GridEntity | None = None
 
     @property
     def occupied(self):
@@ -15,13 +15,13 @@ class Tile:
             return False
         return True
 
-    def draw(self, surface):
+    def render(self, surface):
         origin = to_pixel(self.position)
-        pygame.draw.rect(surface, COLOR_TILE, pygame.Rect(origin[0], origin[1], TILE_SIZE*TILE_RENDER_SCALE, TILE_SIZE*TILE_RENDER_SCALE), 1)
+        pygame.draw.rect(surface, COLOR_TILE, pygame.Rect(origin[0], origin[1], TILE_SIZE, TILE_SIZE), 1)
 
     def __str__(self):
         if self.obj is None:
-            return 'empty tile'
+            return 'Empty tile'
         else:
             return self.obj.__str__()
 
@@ -31,23 +31,33 @@ class Grid:
         self.width = width
         self.height = height
         self.tiles = [[Tile((x, y)) for x in range(width)] for y in range(height)]
-        self.objects: list[GameObject] = []
+        self.objects: list[GridEntity] = []
 
     def update(self):
         for obj in self.objects:
             obj.update()
 
-    def draw(self, surface: pygame.Surface):
+    def render(self, surface: pygame.Surface):
         for line in self.tiles:
             for tile in line:
-                tile.draw(surface)
+                tile.render(surface)
+        # Draw horizontal lines
+        for row in range(GRID_HEIGHT + 1):
+            y = row * TILE_SIZE
+            pygame.draw.line(surface, COLOR_TILE, (0, y), (GRID_WIDTH * TILE_SIZE, y), 1)
+
+        # Draw vertical lines
+        for col in range(GRID_WIDTH + 1):
+            x = col * TILE_SIZE
+            pygame.draw.line(surface, COLOR_TILE, (x, 0), (x, GRID_HEIGHT * TILE_SIZE), 1)
+        
         for obj in self.objects:
-            obj.draw(surface)
+            obj.render(surface)
 
     def get_tile(self, grid_point: GridPoint) -> Tile:
         return self.tiles[grid_point[1]][grid_point[0]]
 
-    def place_object(self, obj: GameObject):
+    def place_object(self, obj: GridEntity):
         """
         Place an object on the grid at its current position.
 

@@ -1,84 +1,97 @@
+from map.grid import Grid
+from map.types import GridPoint
+from entities.grid_entities.base import GridEntity
+from entities.grid_entities.unit import Unit, Team
+from entities.grid_entities.cover import Cover
+from ui.cursor import Cursor
+from util.funcs import handle_cursor_movement
+from .base import StateManager
+from event_bus import EventBus, Event
 from enum import Enum, auto
-from config import *
-from grid.grid_objects.base import GameObject
-from grid.grid_objects.unit import Unit
-from grid.grid_objects.cover import Cover
-from grid.types import GridPoint
-from grid.grid_objects.unit import Team
-from .state_manager import StateManager, State
-from .player_turn_manager import PlayerTurnManager
-from .state_objects.cursor import Cursor
-from .util.handle_cursor_movement import handle_cursor_movement
-from ui.placing_ui import PlacingUI
 import pygame
+import itertools
+from config import *
+from states.base import State
 
 class Placeable(Enum):
-    UNIT_TEAM1 = auto()
-    UNIT_TEAM2 = auto()
+    ERASE = auto()
+    FRIENDLY_UNIT = auto()
+    ENEMY_UNIT = auto()
     COVER = auto()
-    DELETE = auto()
-
-    def get_instance(self, grid_point: GridPoint) -> GameObject | None:
-        match self:
-            case Placeable.DELETE:
-                return None
-            case Placeable.UNIT_TEAM1:
-                return Unit(grid_point, False, False, Team.TEAM1)
-            case Placeable.UNIT_TEAM2:
-                return Unit(grid_point, False, False, Team.TEAM2)
-            case Placeable.COVER:
-                return Cover(grid_point, False, False)
 
     def __str__(self):
         match self:
-            case Placeable.DELETE:
-                return "Erase"
-            case Placeable.UNIT_TEAM1:
+            case self.ERASE:
+                return "Erasing"
+            case self.FRIENDLY_UNIT:
                 return "Friendly unit"
-            case Placeable.UNIT_TEAM2:
+            case self.ENEMY_UNIT:
                 return "Enemy unit"
-            case Placeable.COVER:
+            case self.COVER:
                 return "Cover"
+            
+    def get(self, position: GridPoint):
+        match self:
+            case self.ERASE:
+                return None
+            case self.FRIENDLY_UNIT:
+                return Unit(position, False, False, Team.TEAM1)
+            case self.ENEMY_UNIT:
+                return Unit(position, False, False, Team.TEAM2)
+            case self.COVER:
+                return Cover(position, False)
 
 
 class PlacingManager(StateManager):
-    def __init__(self, game, ui=PlacingUI()):
-        super().__init__(game, ui)
-        self.placeables = [x for x in Placeable]
-        self.current_placeable_index = 0
-        self.current_placeable = self.placeables[self.current_placeable_index]
+    def __init__(self, grid:Grid, bus: EventBus):
+        super().__init__(grid, bus)
         self.cursor = Cursor()
+        self.placeables = [x for x in Placeable]
+        self.cycler = itertools.cycle(self.placeables)
+        self.current_placeable = next(self.cycler)
+        self.hud.set_status(self.current_placeable.__str__(), False, 1, MSG_RED)
 
-    def handle_event(self, event: pygame.event.Event):
+        self.hud.add_tooltip("LMB/SPACE: Place")
+        self.hud.add_tooltip("RMB/TAB: Switch entity")
+        self.hud.add_tooltip("ENTER: Start battle")
+
+        self.bus.subscribe(Event.ENTITY_PLACED, self.on_entity_placed)
+
+    def place_object(self):
+        current_object = self.current_placeable.get(self.cursor.position)
+        if current_object is None:
+            self.grid.remove_object(self.cursor.position)
+            return
+        if self.grid.get_tile(self.cursor.position).occupied:
+            self.grid.remove_object(self.cursor.position)
+            self.grid.place_object(current_object)
+            self.bus.emit(Event.ENTITY_PLACED, obj=current_object)
+            return
+        self.grid.place_object(current_object)
+        self.bus.emit(Event.ENTITY_PLACED, obj=current_object)
+
+    def on_entity_placed(self, obj: GridEntity):
+        self.hud.log_message(f"Entity placed: {str.lower(obj.__str__())}", True, 3, MSG_BLUE)
+
+    def handle_event(self, event: pygame.Event):
+        handle_cursor_movement(event, self.cursor, self.grid)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == pygame.BUTTON_RIGHT:
+                self.current_placeable = next(self.cycler)
+            if event.button == pygame.BUTTON_LEFT:
+                self.place_object()
         if event.type == pygame.KEYDOWN:
-            # Cursor movement
-            handle_cursor_movement(event, self.cursor, (self.game.grid.width, self.game.grid.height))
-            # Space for placing
-            if event.key == pygame.K_SPACE:
-                obj = self.current_placeable.get_instance(self.cursor.position)
-                if obj is None:
-                    self.game.grid.remove_object(self.cursor.position)
-                    return
-                self.game.grid.remove_object(obj.position)
-                self.game.grid.place_object(obj)
-                self.ui.log_message(f"Placed {obj.__str__()}", True, 3, MSG_BLACK)
-                return
-            # Tab for placeable switching
             if event.key == pygame.K_TAB:
-                self.current_placeable_index = (self.current_placeable_index + 1) % len(self.placeables)
-                self.current_placeable = self.placeables[self.current_placeable_index]
-                return
-            # Enter to finish placing
+                self.current_placeable = next(self.cycler)
+            if event.key == pygame.K_SPACE:
+                self.place_object()
             if event.key == pygame.K_RETURN:
-                self.ui.log_message(f"Finished placing", True, 5, MSG_BLUE)
-                self.switch_state(State.PLAYER_TURN)
-                return
-    
-    def update(self):
-        super().update()
+                self.bus.emit(Event.STATE_TRANSITION, state=State.BATTLE)
 
-    
-    def draw(self):
-        super().draw()
-        self.cursor.draw(self.game.screen)
-        self.ui.draw(self.game.screen, self.current_placeable)
+    def update(self):
+        self.hud.set_status(self.current_placeable.__str__(), False, 1, MSG_BLUE)
+
+    def render(self, surface: pygame.Surface):
+        self.grid.render(surface)
+        self.cursor.render(surface)
+        self.hud.render(surface)
