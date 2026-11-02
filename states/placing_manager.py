@@ -49,7 +49,6 @@ class PlacingManager(StateManager):
         self.placeables = [x for x in Placeable]
         self.cycler = itertools.cycle(self.placeables)
         self.current_placeable = next(self.cycler)
-        self.hud.set_status(self.current_placeable.__str__(), False, 1, MSG_RED)
 
         self.hud.add_tooltip("LMB/SPACE: Place")
         self.hud.add_tooltip("RMB/TAB: Switch entity")
