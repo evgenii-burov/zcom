@@ -5,6 +5,7 @@ from typing import Callable
 class Event(Enum):
     STATE_TRANSITION = auto()
     ENTITY_PLACED = auto()
+    UNIT_SELECTED = auto()
     UNIT_MOVED = auto()
     PROJECTILE_SHOT = auto()
     UNIT_DIED = auto()
