@@ -135,6 +135,15 @@ class MovementManager():
             return
         start_position = self.selection_manager.selected_unit.position
         end_position = self.cursor.position
+
+        # Checks
+        if start_position == end_position:
+            self.selection_manager.deselect()
+            return
+        if end_position not in self.selection_manager.movement_tiles:
+            self.hud.log_message("Cannot reach tile", True, 3, MSG_RED)
+            return
+
         self.selection_manager.deselect()
         self.grid.move_object(start_position, end_position)
         self.hud.log_message("Unit moved", True, 3, MSG_BLUE)
