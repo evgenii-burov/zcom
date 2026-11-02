@@ -121,6 +121,15 @@ class SelectionManager():
             draw_rectangle(surface, tile, TILE_REACHABLE_WIDTH, TILE_REACHABLE_HEIGHT, COLOR_REACHABLE_TILE)
 
 
+class ShootingManager():
+    def __init__(self, cursor:Cursor, grid: Grid, hud: HUD, turn_manager: TurnManager, selection_manager: SelectionManager):
+        self.cursor = cursor
+        self.grid = grid
+        self.hud = hud
+        self.turn_manager = turn_manager
+        self.selection_manager = selection_manager
+
+
 class MovementManager():
     def __init__(self, cursor:Cursor, grid: Grid, hud: HUD, turn_manager: TurnManager, selection_manager: SelectionManager):
         self.cursor = cursor
