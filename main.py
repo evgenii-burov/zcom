@@ -1,4 +1,4 @@
-from game import Game
+from game import GameManager
 if __name__ == "__main__":
-    Game().run()
+    GameManager().run()
     #BAH
