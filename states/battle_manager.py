@@ -99,6 +99,8 @@ class SelectionManager():
     def select_target(self):
         self.deselect_target()
         current_obj = self.grid.get_tile(self.cursor.position).obj
+        if current_obj == self.selected_unit:
+            return
         if type(current_obj) is Unit:
             self.selected_target = current_obj
             current_obj.selected = True
@@ -141,9 +143,30 @@ class SelectionManager():
     def calculate_trajectory(self):
         start_tile = self.selected_unit.position
         end_tile = self.selected_target.position
-        dx = end_tile[0] - start_tile[0]
-        dy = end_tile[1] - start_tile[1]
-        pass
+
+        x0, y0 = start_tile
+        x1, y1 = end_tile
+
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx - dy
+
+        x, y = x0, y0
+        self.shot_trajectory_tiles = []
+        while True:
+            if (x, y) != (x0, y0):          # исключаем стартовую клетку
+                self.shot_trajectory_tiles.append((x, y))
+            if x == x1 and y == y1:
+                break
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x += sx
+            if e2 < dx:
+                err += dx
+                y += sy
     
     def render(self, surface: pygame.Surface):
         for tile in self.movement_tiles:
@@ -186,6 +209,7 @@ class MovementManager():
             return
 
         self.selection_manager.deselect_unit()
+        self.selection_manager.deselect_target()
         self.grid.move_object(start_position, end_position)
         self.hud.log_message("Unit moved", True, 3, MSG_BLUE)
         
