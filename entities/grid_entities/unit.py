@@ -4,6 +4,7 @@ from map.types import GridPoint, to_pixel
 from config import *
 from enum import Enum, auto
 from util.funcs import draw_rectangle
+from math import sin
 
 class Team(Enum):
     TEAM1 = auto()
@@ -22,21 +23,22 @@ class Unit(GridEntity):
         self.base_hit_chance = .9
 
         self.color = COLOR_TEAM1 if self.team == Team.TEAM1 else COLOR_TEAM2
-        self.blink_timer = 0
-        self.blink_interval = .5
-        self.blink_timer_max = self.blink_interval * FRAMERATE * 2
+
+        self.hidden = False
 
     def update(self):
-        self.hidden = False
-        if self.selected:
-            self.blink_timer = (self.blink_timer + 1) % self.blink_timer_max
-            if self.blink_timer > self.blink_timer_max // 2:
-                self.hidden = True
+        pass
 
-    def render(self, surface:pygame.Surface):
-        if self.hidden:
-            return
-        draw_rectangle(surface, self.position, UNIT_WIDTH, UNIT_HEIGHT, self.color) 
+    def render(self, surface:pygame.Surface, time: int):
+        if not self.selected:
+            self.hidden = False
+        else:
+            if time % (1000*60/FRAMERATE) > (1000*60/FRAMERATE) / 2:
+                self.hidden = False
+            else:
+                self.hidden = True
+        if not self.hidden:
+            draw_rectangle(surface, self.position, UNIT_WIDTH, UNIT_HEIGHT, self.color) 
         
 
     def __str__(self):

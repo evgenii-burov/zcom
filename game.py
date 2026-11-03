@@ -24,6 +24,7 @@ class GameManager:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.grid = Grid()
         self.clock = pygame.time.Clock()
+        self.time = 0
         self.bus = EventBus()
         self.bus.subscribe(Event.STATE_TRANSITION, self.on_state_transition)
         self.states: dict[State, StateManager] = {
@@ -43,6 +44,7 @@ class GameManager:
             self.render()
             pygame.display.flip()
             self.ms_since_last_frame = self.clock.tick(FRAMERATE)
+            self.time += self.ms_since_last_frame
         pygame.quit()
     
     def handle_events(self):
@@ -53,7 +55,7 @@ class GameManager:
             self.current_state.handle_event(event)
 
     def update(self):
-        self.current_state.update()
+        self.current_state.update(self.time)
 
     def render(self):
         self.screen.fill(COLOR_BACKGROUND)

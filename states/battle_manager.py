@@ -18,7 +18,7 @@ from config import *
 
 
 class BattleManager(StateManager):
-    def __init__(self, grid:Grid, bus: EventBus):
+    def __init__(self, grid: Grid, bus: EventBus):
         super().__init__(grid, bus)
         self.cursor = Cursor()
         self.turn_manager = TurnManager()
@@ -34,19 +34,23 @@ class BattleManager(StateManager):
         handle_cursor_movement(event, self.cursor, self.grid)
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
-                self.selection_manager.select_unit()
+                if self.selection_manager.selected_unit is None:
+                    self.selection_manager.select_unit()
+                else:
+                    self.selection_manager.select_target()
             if event.button == pygame.BUTTON_RIGHT:
                 self.movement_manager.move_unit()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 self.bus.emit(Event.STATE_TRANSITION, state=State.PLACING)
 
-    def update(self):
+    def update(self, time: int):
+        super().update(time)
         # self.hud.set_status(self.grid.get_tile(self.cursor.position).__str__(), False, 1, MSG_BLUE)
         self.grid.update()
 
     def render(self, surface: pygame.Surface):
-        self.grid.render(surface)
+        self.grid.render(surface, self.time)
         self.selection_manager.render(surface)
         self.cursor.render(surface)
         self.hud.render(surface)
@@ -69,21 +73,39 @@ class SelectionManager():
         self.movement_costs: dict[GridPoint, int] = {}
         self.long_movement_tiles = list[GridPoint]
         self.selected_target: None | Unit = None
+        self.shot_trajectory_tiles: list[GridPoint] = []
 
-    def deselect(self):
+    def deselect_unit(self):
         if self.selected_unit is not None:
             self.selected_unit.selected = False
         self.selected_unit = None
         self.movement_tiles: list[GridPoint] = []
 
+    def deselect_target(self):
+        if self.selected_target is not None:
+            self.selected_target.selected = False
+        self.selected_target = None
+        self.shot_trajectory_tiles: list[GridPoint] = []
+
     def select_unit(self):
-        self.deselect()
+        self.deselect_unit()
         current_obj = self.grid.get_tile(self.cursor.position).obj
         if type(current_obj) is Unit:
             self.selected_unit = current_obj
             current_obj.selected = True
             self.hud.log_message("Unit selected", True, 3, MSG_BLUE)
             self.calculate_movement()
+
+    def select_target(self):
+        self.deselect_target()
+        current_obj = self.grid.get_tile(self.cursor.position).obj
+        if type(current_obj) is Unit:
+            self.selected_target = current_obj
+            current_obj.selected = True
+            self.hud.log_message("Target selected", True, 3, MSG_BLUE)
+            self.calculate_trajectory()
+        else:
+            self.deselect_unit()
 
     def calculate_movement(self):
         if self.selected_unit is None:
@@ -115,10 +137,29 @@ class SelectionManager():
 
         self.movement_costs = costs
         self.movement_tiles = [tile for tile in costs if tile != start]
-            
+
+    def calculate_trajectory(self):
+        start_tile = self.selected_unit.position
+        end_tile = self.selected_target.position
+        dx = end_tile[0] - start_tile[0]
+        dy = end_tile[1] - start_tile[1]
+        pass
+    
     def render(self, surface: pygame.Surface):
         for tile in self.movement_tiles:
             draw_rectangle(surface, tile, TILE_REACHABLE_WIDTH, TILE_REACHABLE_HEIGHT, COLOR_REACHABLE_TILE)
+        for tile in self.shot_trajectory_tiles:
+            draw_rectangle(surface, tile, TILE_REACHABLE_WIDTH, TILE_REACHABLE_HEIGHT, MSG_RED)
+
+
+
+class ShootingManager():
+    def __init__(self, cursor:Cursor, grid: Grid, hud: HUD, turn_manager: TurnManager, selection_manager: SelectionManager):
+        self.cursor = cursor
+        self.grid = grid
+        self.hud = hud
+        self.turn_manager = turn_manager
+        self.selection_manager = selection_manager
 
 
 class MovementManager():
@@ -138,13 +179,13 @@ class MovementManager():
 
         # Checks
         if start_position == end_position:
-            self.selection_manager.deselect()
+            self.selection_manager.deselect_unit()
             return
         if end_position not in self.selection_manager.movement_tiles:
             self.hud.log_message("Cannot reach tile", True, 3, MSG_RED)
             return
 
-        self.selection_manager.deselect()
+        self.selection_manager.deselect_unit()
         self.grid.move_object(start_position, end_position)
         self.hud.log_message("Unit moved", True, 3, MSG_BLUE)
         
