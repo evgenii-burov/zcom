@@ -37,7 +37,7 @@ class Grid:
         for obj in self.objects:
             obj.update()
 
-    def render(self, surface: pygame.Surface):
+    def render(self, surface: pygame.Surface, time: int):
         for line in self.tiles:
             for tile in line:
                 tile.render(surface)
@@ -52,7 +52,7 @@ class Grid:
             pygame.draw.line(surface, COLOR_TILE, (x, 0), (x, GRID_HEIGHT * TILE_SIZE), 1)
         
         for obj in self.objects:
-            obj.render(surface)
+            obj.render(surface, time)
 
     def get_tile(self, grid_point: GridPoint) -> Tile:
         return self.tiles[grid_point[1]][grid_point[0]]

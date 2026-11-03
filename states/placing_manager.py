@@ -87,10 +87,11 @@ class PlacingManager(StateManager):
             if event.key == pygame.K_RETURN:
                 self.bus.emit(Event.STATE_TRANSITION, state=State.BATTLE)
 
-    def update(self):
+    def update(self, time: int):
+        super().update(time)
         self.hud.set_status(self.current_placeable.__str__(), False, 1, MSG_BLUE)
 
     def render(self, surface: pygame.Surface):
-        self.grid.render(surface)
+        self.grid.render(surface, self.time)
         self.cursor.render(surface)
         self.hud.render(surface)

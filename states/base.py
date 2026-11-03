@@ -14,13 +14,14 @@ class StateManager:
     def __init__(self, grid:Grid, bus: EventBus):
         self.grid = grid
         self.bus = bus
+        self.time = 0
         self.hud = HUD()
 
     def handle_event(self, event: pygame.Event):
         pass
 
-    def update(self):
-        pass
+    def update(self, time: int):
+        self.time = time
 
     def render(self):
         pass

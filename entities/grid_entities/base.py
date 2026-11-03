@@ -9,6 +9,6 @@ class GridEntity:
     def update(self):
         pass
     
-    def render(self, surface: pygame.Surface):
+    def render(self, surface: pygame.Surface, time: int):
         pass
 
