@@ -14,6 +14,7 @@ class Team(Enum):
 class Unit(GridEntity):
     def __init__(self, position: GridPoint, hidden: bool, selected: bool, team: Team):
         super().__init__(position, hidden)
+        self.cover_value = .1
         self.selected = selected
         self.team = team
 
@@ -38,7 +39,9 @@ class Unit(GridEntity):
             else:
                 self.hidden = True
         if not self.hidden:
-            draw_rectangle(surface, self.position, UNIT_WIDTH, UNIT_HEIGHT, self.color) 
+            draw_rectangle(surface, self.position, UNIT_WIDTH, UNIT_HEIGHT, self.color)
+            draw_rectangle(surface, self.position, UNIT_WIDTH*2, UNIT_HEIGHT//3, MSG_BLACK, 0, -UNIT_HEIGHT//2)
+            draw_rectangle(surface, self.position, UNIT_WIDTH, UNIT_HEIGHT//4, MSG_BLACK, 0, -1.5*UNIT_HEIGHT//2)
         
 
     def __str__(self):

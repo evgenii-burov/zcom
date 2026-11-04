@@ -12,9 +12,11 @@ from event_bus import EventBus, Event
 from enum import Enum, auto
 import pygame
 import itertools
+from random import random
 from collections import deque
 from util.funcs import draw_rectangle
 from config import *
+from entities.projectile import Projectile
 
 
 class BattleManager(StateManager):
@@ -24,6 +26,7 @@ class BattleManager(StateManager):
         self.turn_manager = TurnManager()
         self.selection_manager = SelectionManager(self.cursor, self.grid, self.hud, self.turn_manager)
         self.movement_manager = MovementManager(self.cursor, self.grid, self.hud, self.turn_manager, self.selection_manager)
+        self.shooting_manager = ShootingManager(self.cursor, self.grid, self.hud, self.turn_manager, self.selection_manager)
         
         self.hud.set_status("BATTLE", False, 1, MSG_RED)
         self.hud.add_tooltip("LMB/SPACE: ")
@@ -32,6 +35,8 @@ class BattleManager(StateManager):
 
     def handle_event(self, event: pygame.Event):
         handle_cursor_movement(event, self.cursor, self.grid)
+        if self.turn_manager.animation_in_progress:
+            return
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 if self.selection_manager.selected_unit is None:
@@ -43,15 +48,19 @@ class BattleManager(StateManager):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 self.bus.emit(Event.STATE_TRANSITION, state=State.PLACING)
+            if event.key == pygame.K_f:
+                self.shooting_manager.fire_shot()
 
     def update(self, time: int):
         super().update(time)
         # self.hud.set_status(self.grid.get_tile(self.cursor.position).__str__(), False, 1, MSG_BLUE)
         self.grid.update()
+        self.shooting_manager.update(self.dt)
 
     def render(self, surface: pygame.Surface):
-        self.grid.render(surface, self.time)
         self.selection_manager.render(surface)
+        self.grid.render(surface, self.time)
+        self.shooting_manager.render(surface)
         self.cursor.render(surface)
         self.hud.render(surface)
 
@@ -60,7 +69,7 @@ class TurnManager:
     def __init__(self):
         self.current_turn = 1
         self.current_team = Team.TEAM1
-
+        self.animation_in_progress = False
 
 class SelectionManager():
     def __init__(self, cursor:Cursor, grid: Grid, hud: HUD, turn_manager: TurnManager):
@@ -175,7 +184,6 @@ class SelectionManager():
             draw_rectangle(surface, tile, TILE_REACHABLE_WIDTH, TILE_REACHABLE_HEIGHT, MSG_RED)
 
 
-
 class ShootingManager():
     def __init__(self, cursor:Cursor, grid: Grid, hud: HUD, turn_manager: TurnManager, selection_manager: SelectionManager):
         self.cursor = cursor
@@ -183,6 +191,50 @@ class ShootingManager():
         self.hud = hud
         self.turn_manager = turn_manager
         self.selection_manager = selection_manager
+        self.target: GridEntity | None = None
+        self.active_projectile: Projectile | None = None
+
+    def fire_shot(self):
+        if self.selection_manager.selected_target is None:
+            self.hud.log_message("No target selected", True, 3, MSG_RED)
+            return
+        
+        for tile in self.selection_manager.shot_trajectory_tiles:
+            current_object = self.grid.get_tile(tile).obj
+            if current_object is None:
+                continue
+            if random() < current_object.cover_value:
+                self.target = current_object
+                break
+            elif self.selection_manager.selected_target == current_object:
+                self.target = self.selection_manager.selected_target
+                break
+        
+        self.active_projectile = Projectile(
+            self.selection_manager.selected_unit.position,
+            self.target.position
+            )
+
+        self.turn_manager.animation_in_progress = True
+
+    def resolve_shot(self):
+        self.active_projectile = None
+        self.turn_manager.animation_in_progress = False
+        self.hud.log_message(f'{self.target.__str__()} destroyed', True, 3, MSG_GREEN)
+        self.grid.remove_object(self.target.position)
+        self.target = None
+        self.selection_manager.deselect_target()
+        
+    def update(self, dt: int):
+        if not self.active_projectile:
+            return
+        self.active_projectile.update(dt)
+        if self.active_projectile.reached_target:
+            self.resolve_shot()
+
+    def render(self, surface: pygame.Surface):
+        if self.active_projectile:
+            self.active_projectile.render(surface)
 
 
 class MovementManager():
@@ -212,4 +264,3 @@ class MovementManager():
         self.selection_manager.deselect_target()
         self.grid.move_object(start_position, end_position)
         self.hud.log_message("Unit moved", True, 3, MSG_BLUE)
-        

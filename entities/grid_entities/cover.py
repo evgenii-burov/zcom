@@ -8,12 +8,12 @@ class Cover(GridEntity):
     def __init__(self, grid_point:GridPoint, hidden:bool):
         super().__init__(grid_point, hidden)
         self.color = COLOR_COVER
-        self.protection = .3
+        self.cover_value = .4
 
     def update(self):
         pass
 
-    def render(self, surface:pygame.Surface):
+    def render(self, surface:pygame.Surface, time: int):
         draw_rectangle(surface, self.position, COVER_WIDTH, COVER_HEIGHT, COLOR_COVER)
 
     def __str__(self):

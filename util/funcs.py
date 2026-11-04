@@ -8,9 +8,9 @@ if TYPE_CHECKING:
     from ui.cursor import Cursor
 
 
-def draw_rectangle(surface: pygame.Surface, grid_point: GridPoint, width:int, height: int, color: pygame.Color):
+def draw_rectangle(surface: pygame.Surface, grid_point: GridPoint, width: int, height: int, color: pygame.Color, x_offset :int=0, y_offset: int=0):
     tile_top_left_point = to_pixel(grid_point)
-    offset = ((TILE_SIZE - width)//2, (TILE_SIZE - height)//2)
+    offset = (x_offset+(TILE_SIZE - width)//2, y_offset+(TILE_SIZE - height)//2)
     rect_top_left_point = (tile_top_left_point[0]+offset[0],tile_top_left_point[1]+offset[1])
     rectangle = pygame.Rect(rect_top_left_point[0], rect_top_left_point[1], width, height)
     pygame.draw.rect(surface,color,rectangle)
