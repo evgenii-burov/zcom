@@ -73,6 +73,25 @@ class TurnManager:
         self.current_team = Team.TEAM1
         self.animation_in_progress = False
 
+    def announce_victory(self, team: Team):
+        self.animation_in_progress = True
+        self.hud.set_status(f"{team} victory!", False, 1, MSG_BLACK)
+
+    def check_victory(self):
+        team1_count = 0
+        team2_count = 0
+        for obj in self.grid.objects:
+            if type(obj) != Unit:
+                    continue
+            if obj.team == Team.TEAM1:
+                team1_count += 1
+            else:
+                team2_count += 1
+        if team1_count == 0:
+            self.announce_victory(Team.TEAM2)
+        else:
+            self.announce_victory(Team.TEAM1)
+
     def check_turn_end(self):
         for obj in self.grid.objects:
             if type(obj) != Unit:
@@ -103,6 +122,7 @@ class TurnManager:
         else:
             self.current_team = Team.TEAM1
         self.hud.set_status(f"Turn {self.current_turn}; {self.current_team}", False, 1, MSG_BLUE)
+
 
 class SelectionManager():
     def __init__(self, cursor:Cursor, grid: Grid, hud: HUD, turn_manager: TurnManager):
@@ -275,6 +295,8 @@ class ShootingManager():
         self.selection_manager.deselect_target()
         self.turn_manager.deduct_unit_action_points(self.selection_manager.selected_unit, Action.SHOOT)
         self.selection_manager.deselect_unit()
+
+        self.turn_manager.check_victory()
         
     def update(self, dt: int):
         if not self.active_projectile:
