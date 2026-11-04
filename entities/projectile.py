@@ -30,7 +30,8 @@ class Projectile:
         self.reached_target = self.total_distance == 0
 
     def update(self, dt: float):
-        """dt в секундах."""
+        """dt в миллисекундах."""
+        dt = dt / 1000
         if self.reached_target:
             return
         self.travelled += self.velocity * dt

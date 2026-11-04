@@ -10,6 +10,25 @@ class Team(Enum):
     TEAM1 = auto()
     TEAM2 = auto()
 
+    def __str__(self):
+        match self:
+            case self.TEAM1:
+                return "Blue team"
+            case self.TEAM2:
+                return "Red team"
+
+
+class Action(Enum):
+    MOVE = auto()
+    SHOOT = auto()
+
+    def cost(self):
+            match self:
+                case self.MOVE:
+                    return 1
+                case self.SHOOT:
+                    return 2
+                
 
 class Unit(GridEntity):
     def __init__(self, position: GridPoint, hidden: bool, selected: bool, team: Team):
@@ -30,6 +49,15 @@ class Unit(GridEntity):
     def update(self):
         pass
 
+    def check_action_availability(self, action: Action):
+        return self.actions_left>0
+    
+    def deduct_action_points(self, action: Action):
+        self.actions_left -= action.cost()
+    
+    def reset_action_points(self):
+        self.actions_left = self.max_actions
+    
     def render(self, surface:pygame.Surface, time: int):
         if not self.selected:
             self.hidden = False

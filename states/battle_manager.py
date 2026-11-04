@@ -1,7 +1,7 @@
 from map.grid import Grid
 from map.types import GridPoint
 from entities.grid_entities.base import GridEntity
-from entities.grid_entities.unit import Unit, Team
+from entities.grid_entities.unit import Unit, Team, Action
 from entities.grid_entities.cover import Cover
 from states.base import State
 from ui.hud import HUD
@@ -23,12 +23,12 @@ class BattleManager(StateManager):
     def __init__(self, grid: Grid, bus: EventBus):
         super().__init__(grid, bus)
         self.cursor = Cursor()
-        self.turn_manager = TurnManager()
+        self.turn_manager = TurnManager(self.grid, self.hud)
         self.selection_manager = SelectionManager(self.cursor, self.grid, self.hud, self.turn_manager)
         self.movement_manager = MovementManager(self.cursor, self.grid, self.hud, self.turn_manager, self.selection_manager)
         self.shooting_manager = ShootingManager(self.cursor, self.grid, self.hud, self.turn_manager, self.selection_manager)
         
-        self.hud.set_status("BATTLE", False, 1, MSG_RED)
+        self.hud.set_status(f"Turn {self.turn_manager.current_turn}; {self.turn_manager.current_team}", False, 1, MSG_BLUE)
         self.hud.add_tooltip("LMB/SPACE: ")
         self.hud.add_tooltip("RMB/TAB: ")
         self.hud.add_tooltip("ENTER: ")
@@ -66,10 +66,43 @@ class BattleManager(StateManager):
 
 
 class TurnManager:
-    def __init__(self):
+    def __init__(self, grid: Grid, hud: HUD):
+        self.grid = grid
+        self.hud = hud
         self.current_turn = 1
         self.current_team = Team.TEAM1
         self.animation_in_progress = False
+
+    def check_turn_end(self):
+        for obj in self.grid.objects:
+            if type(obj) != Unit:
+                 continue
+            if obj.team != self.current_team:
+                continue
+            if obj.actions_left > 0:
+                return False
+        return True
+
+    def check_unit_action_availability(self, unit: Unit, action: Action):
+        return unit.check_action_availability(action)
+
+    def deduct_unit_action_points(self, unit: Unit, action: Action):
+        unit.deduct_action_points(action)
+        if self.check_turn_end():
+            self.switch_turn()
+
+    def switch_turn(self):
+        for obj in self.grid.objects:
+            if type(obj) != Unit:
+                continue
+            obj.reset_action_points()
+            
+        self.current_turn += 1
+        if self.current_team == Team.TEAM1:
+            self.current_team = Team.TEAM2
+        else:
+            self.current_team = Team.TEAM1
+        self.hud.set_status(f"Turn {self.current_turn}; {self.current_team}", False, 1, MSG_BLUE)
 
 class SelectionManager():
     def __init__(self, cursor:Cursor, grid: Grid, hud: HUD, turn_manager: TurnManager):
@@ -82,6 +115,10 @@ class SelectionManager():
         self.movement_costs: dict[GridPoint, int] = {}
         self.long_movement_tiles = list[GridPoint]
         self.selected_target: None | Unit = None
+        self.shot_trajectory_tiles: list[GridPoint] = []
+
+    def clear_tiles(self):
+        self.movement_tiles: list[GridPoint] = []
         self.shot_trajectory_tiles: list[GridPoint] = []
 
     def deselect_unit(self):
@@ -100,6 +137,9 @@ class SelectionManager():
         self.deselect_unit()
         current_obj = self.grid.get_tile(self.cursor.position).obj
         if type(current_obj) is Unit:
+            if current_obj.team != self.turn_manager.current_team:
+                self.hud.log_message("Selection: wrong turn", True, 3, MSG_RED)
+                return
             self.selected_unit = current_obj
             current_obj.selected = True
             self.hud.log_message("Unit selected", True, 3, MSG_BLUE)
@@ -111,6 +151,9 @@ class SelectionManager():
         if current_obj == self.selected_unit:
             return
         if type(current_obj) is Unit:
+            if current_obj.team == self.turn_manager.current_team:
+                self.select_unit()
+                return
             self.selected_target = current_obj
             current_obj.selected = True
             self.hud.log_message("Target selected", True, 3, MSG_BLUE)
@@ -198,6 +241,10 @@ class ShootingManager():
         if self.selection_manager.selected_target is None:
             self.hud.log_message("No target selected", True, 3, MSG_RED)
             return
+
+        if not self.turn_manager.check_unit_action_availability(self.selection_manager.selected_unit, Action.SHOOT):
+            self.hud.log_message("Out of actions", True, 3, MSG_RED)
+            return
         
         for tile in self.selection_manager.shot_trajectory_tiles:
             current_object = self.grid.get_tile(tile).obj
@@ -215,6 +262,8 @@ class ShootingManager():
             self.target.position
             )
 
+        self.selection_manager.clear_tiles()
+
         self.turn_manager.animation_in_progress = True
 
     def resolve_shot(self):
@@ -224,6 +273,8 @@ class ShootingManager():
         self.grid.remove_object(self.target.position)
         self.target = None
         self.selection_manager.deselect_target()
+        self.turn_manager.deduct_unit_action_points(self.selection_manager.selected_unit, Action.SHOOT)
+        self.selection_manager.deselect_unit()
         
     def update(self, dt: int):
         if not self.active_projectile:
@@ -249,6 +300,9 @@ class MovementManager():
         if self.selection_manager.selected_unit is None:
             self.hud.log_message("No unit selected", True, 3, MSG_RED)
             return
+        if not self.turn_manager.check_unit_action_availability(self.selection_manager.selected_unit, Action.MOVE):
+            self.hud.log_message("Out of actions", True, 3, MSG_RED)
+            return
         start_position = self.selection_manager.selected_unit.position
         end_position = self.cursor.position
 
@@ -260,7 +314,10 @@ class MovementManager():
             self.hud.log_message("Cannot reach tile", True, 3, MSG_RED)
             return
 
+        self.turn_manager.deduct_unit_action_points(self.selection_manager.selected_unit, Action.MOVE)
+
         self.selection_manager.deselect_unit()
         self.selection_manager.deselect_target()
         self.grid.move_object(start_position, end_position)
         self.hud.log_message("Unit moved", True, 3, MSG_BLUE)
+
