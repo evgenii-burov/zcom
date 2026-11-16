@@ -1,7 +1,7 @@
 from map.grid import Grid
 from map.types import GridPoint
 from entities.grid_entities.base import GridEntity
-from entities.grid_entities.unit import Unit, Team
+from entities.grid_entities.unit import Unit, Team, Action
 from entities.grid_entities.cover import Cover
 from states.base import State
 from ui.hud import HUD
@@ -12,26 +12,31 @@ from event_bus import EventBus, Event
 from enum import Enum, auto
 import pygame
 import itertools
+from random import random
 from collections import deque
 from util.funcs import draw_rectangle
 from config import *
+from entities.projectile import Projectile
 
 
 class BattleManager(StateManager):
     def __init__(self, grid: Grid, bus: EventBus):
         super().__init__(grid, bus)
         self.cursor = Cursor()
-        self.turn_manager = TurnManager()
+        self.turn_manager = TurnManager(self.grid, self.hud)
         self.selection_manager = SelectionManager(self.cursor, self.grid, self.hud, self.turn_manager)
         self.movement_manager = MovementManager(self.cursor, self.grid, self.hud, self.turn_manager, self.selection_manager)
+        self.shooting_manager = ShootingManager(self.cursor, self.grid, self.hud, self.turn_manager, self.selection_manager)
         
-        self.hud.set_status("BATTLE", False, 1, MSG_RED)
+        self.hud.set_status(f"Turn {self.turn_manager.current_turn}; {self.turn_manager.current_team}", False, 1, MSG_BLUE)
         self.hud.add_tooltip("LMB/SPACE: ")
         self.hud.add_tooltip("RMB/TAB: ")
         self.hud.add_tooltip("ENTER: ")
 
     def handle_event(self, event: pygame.Event):
         handle_cursor_movement(event, self.cursor, self.grid)
+        if self.turn_manager.animation_in_progress:
+            return
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 if self.selection_manager.selected_unit is None:
@@ -43,23 +48,80 @@ class BattleManager(StateManager):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
                 self.bus.emit(Event.STATE_TRANSITION, state=State.PLACING)
+            if event.key == pygame.K_f:
+                self.shooting_manager.fire_shot()
 
     def update(self, time: int):
         super().update(time)
         # self.hud.set_status(self.grid.get_tile(self.cursor.position).__str__(), False, 1, MSG_BLUE)
         self.grid.update()
+        self.shooting_manager.update(self.dt)
 
     def render(self, surface: pygame.Surface):
-        self.grid.render(surface, self.time)
         self.selection_manager.render(surface)
+        self.grid.render(surface, self.time)
+        self.shooting_manager.render(surface)
         self.cursor.render(surface)
         self.hud.render(surface)
 
 
 class TurnManager:
-    def __init__(self):
+    def __init__(self, grid: Grid, hud: HUD):
+        self.grid = grid
+        self.hud = hud
         self.current_turn = 1
         self.current_team = Team.TEAM1
+        self.animation_in_progress = False
+
+    def announce_victory(self, team: Team):
+        self.animation_in_progress = True
+        self.hud.set_status(f"{team} victory!", False, 1, MSG_BLACK)
+
+    def check_victory(self):
+        team1_count = 0
+        team2_count = 0
+        for obj in self.grid.objects:
+            if type(obj) != Unit:
+                    continue
+            if obj.team == Team.TEAM1:
+                team1_count += 1
+            else:
+                team2_count += 1
+        if team1_count == 0:
+            self.announce_victory(Team.TEAM2)
+        else:
+            self.announce_victory(Team.TEAM1)
+
+    def check_turn_end(self):
+        for obj in self.grid.objects:
+            if type(obj) != Unit:
+                 continue
+            if obj.team != self.current_team:
+                continue
+            if obj.actions_left > 0:
+                return False
+        return True
+
+    def check_unit_action_availability(self, unit: Unit, action: Action):
+        return unit.check_action_availability(action)
+
+    def deduct_unit_action_points(self, unit: Unit, action: Action):
+        unit.deduct_action_points(action)
+        if self.check_turn_end():
+            self.switch_turn()
+
+    def switch_turn(self):
+        for obj in self.grid.objects:
+            if type(obj) != Unit:
+                continue
+            obj.reset_action_points()
+            
+        self.current_turn += 1
+        if self.current_team == Team.TEAM1:
+            self.current_team = Team.TEAM2
+        else:
+            self.current_team = Team.TEAM1
+        self.hud.set_status(f"Turn {self.current_turn}; {self.current_team}", False, 1, MSG_BLUE)
 
 
 class SelectionManager():
@@ -73,6 +135,10 @@ class SelectionManager():
         self.movement_costs: dict[GridPoint, int] = {}
         self.long_movement_tiles = list[GridPoint]
         self.selected_target: None | Unit = None
+        self.shot_trajectory_tiles: list[GridPoint] = []
+
+    def clear_tiles(self):
+        self.movement_tiles: list[GridPoint] = []
         self.shot_trajectory_tiles: list[GridPoint] = []
 
     def deselect_unit(self):
@@ -91,6 +157,9 @@ class SelectionManager():
         self.deselect_unit()
         current_obj = self.grid.get_tile(self.cursor.position).obj
         if type(current_obj) is Unit:
+            if current_obj.team != self.turn_manager.current_team:
+                self.hud.log_message("Selection: wrong turn", True, 3, MSG_RED)
+                return
             self.selected_unit = current_obj
             current_obj.selected = True
             self.hud.log_message("Unit selected", True, 3, MSG_BLUE)
@@ -99,7 +168,12 @@ class SelectionManager():
     def select_target(self):
         self.deselect_target()
         current_obj = self.grid.get_tile(self.cursor.position).obj
+        if current_obj == self.selected_unit:
+            return
         if type(current_obj) is Unit:
+            if current_obj.team == self.turn_manager.current_team:
+                self.select_unit()
+                return
             self.selected_target = current_obj
             current_obj.selected = True
             self.hud.log_message("Target selected", True, 3, MSG_BLUE)
@@ -141,16 +215,36 @@ class SelectionManager():
     def calculate_trajectory(self):
         start_tile = self.selected_unit.position
         end_tile = self.selected_target.position
-        dx = end_tile[0] - start_tile[0]
-        dy = end_tile[1] - start_tile[1]
-        pass
+
+        x0, y0 = start_tile
+        x1, y1 = end_tile
+
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx - dy
+
+        x, y = x0, y0
+        self.shot_trajectory_tiles = []
+        while True:
+            if (x, y) != (x0, y0):          # исключаем стартовую клетку
+                self.shot_trajectory_tiles.append((x, y))
+            if x == x1 and y == y1:
+                break
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x += sx
+            if e2 < dx:
+                err += dx
+                y += sy
     
     def render(self, surface: pygame.Surface):
         for tile in self.movement_tiles:
             draw_rectangle(surface, tile, TILE_REACHABLE_WIDTH, TILE_REACHABLE_HEIGHT, COLOR_REACHABLE_TILE)
         for tile in self.shot_trajectory_tiles:
             draw_rectangle(surface, tile, TILE_REACHABLE_WIDTH, TILE_REACHABLE_HEIGHT, MSG_RED)
-
 
 
 class ShootingManager():
@@ -160,6 +254,60 @@ class ShootingManager():
         self.hud = hud
         self.turn_manager = turn_manager
         self.selection_manager = selection_manager
+        self.target: GridEntity | None = None
+        self.active_projectile: Projectile | None = None
+
+    def fire_shot(self):
+        if self.selection_manager.selected_target is None:
+            self.hud.log_message("No target selected", True, 3, MSG_RED)
+            return
+
+        if not self.turn_manager.check_unit_action_availability(self.selection_manager.selected_unit, Action.SHOOT):
+            self.hud.log_message("Out of actions", True, 3, MSG_RED)
+            return
+        
+        for tile in self.selection_manager.shot_trajectory_tiles:
+            current_object = self.grid.get_tile(tile).obj
+            if current_object is None:
+                continue
+            if random() < current_object.cover_value:
+                self.target = current_object
+                break
+            elif self.selection_manager.selected_target == current_object:
+                self.target = self.selection_manager.selected_target
+                break
+        
+        self.active_projectile = Projectile(
+            self.selection_manager.selected_unit.position,
+            self.target.position
+            )
+
+        self.selection_manager.clear_tiles()
+
+        self.turn_manager.animation_in_progress = True
+
+    def resolve_shot(self):
+        self.active_projectile = None
+        self.turn_manager.animation_in_progress = False
+        self.hud.log_message(f'{self.target.__str__()} destroyed', True, 3, MSG_GREEN)
+        self.grid.remove_object(self.target.position)
+        self.target = None
+        self.selection_manager.deselect_target()
+        self.turn_manager.deduct_unit_action_points(self.selection_manager.selected_unit, Action.SHOOT)
+        self.selection_manager.deselect_unit()
+
+        self.turn_manager.check_victory()
+        
+    def update(self, dt: int):
+        if not self.active_projectile:
+            return
+        self.active_projectile.update(dt)
+        if self.active_projectile.reached_target:
+            self.resolve_shot()
+
+    def render(self, surface: pygame.Surface):
+        if self.active_projectile:
+            self.active_projectile.render(surface)
 
 
 class MovementManager():
@@ -174,6 +322,9 @@ class MovementManager():
         if self.selection_manager.selected_unit is None:
             self.hud.log_message("No unit selected", True, 3, MSG_RED)
             return
+        if not self.turn_manager.check_unit_action_availability(self.selection_manager.selected_unit, Action.MOVE):
+            self.hud.log_message("Out of actions", True, 3, MSG_RED)
+            return
         start_position = self.selection_manager.selected_unit.position
         end_position = self.cursor.position
 
@@ -185,7 +336,10 @@ class MovementManager():
             self.hud.log_message("Cannot reach tile", True, 3, MSG_RED)
             return
 
+        self.turn_manager.deduct_unit_action_points(self.selection_manager.selected_unit, Action.MOVE)
+
         self.selection_manager.deselect_unit()
+        self.selection_manager.deselect_target()
         self.grid.move_object(start_position, end_position)
         self.hud.log_message("Unit moved", True, 3, MSG_BLUE)
-        
+
